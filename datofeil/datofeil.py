@@ -312,7 +312,7 @@ class Template:
                 continue
 
             if not self.complex_replacements_year(p):
-                self.unresolved.append('%s=%s' % (p.key, p.value))
+                self.unresolved.append({'key': p.key, 'value': p.value})
 
         for p in self.dato:
 
@@ -328,7 +328,7 @@ class Template:
                 continue
 
             if not self.complex_replacements(p):
-                self.unresolved.append('%s=%s' % (p.key, p.value))
+                self.unresolved.append({'key': p.key, 'value': p.value})
 
     def complex_replacements(self, p):
         """
@@ -403,6 +403,9 @@ class Page:
                     self.modified.extend(t.modified)
                     self.unresolved.extend(t.unresolved)
 
+        for u in self.unresolved:
+            u['page'] = page.name
+
         if len(self.modified) != 0:
             if len(self.modified) == 1:
                 summary = '[Datofiks] %s' % (self.format_entry(self.modified[0]))
@@ -461,8 +464,8 @@ def main():
 
             unresolved.extend(p.unresolved)
 
-            # if cnt['pagesChecked'] > 400:
-            #    break
+            # if cnt['pagesChecked'] > 100:
+            #     break
 
     print
     print "Pages with no known templates with date errors:"
@@ -472,7 +475,7 @@ def main():
     print
     print "Unresolved date errors:"
     for p in unresolved:
-        print ' - %s' % p
+        print '| %(page)s || %(key)s || %(value)s\n|-' % p
 
     cnt['datesOk'] = cnt['datesChecked'] - cnt['datesModified'] - cnt['datesUnresolved']
     print
