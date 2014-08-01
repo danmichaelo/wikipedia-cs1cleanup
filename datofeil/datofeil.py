@@ -128,9 +128,14 @@ def is_valid_date(val):
     if m and is_valid_month(m.group(2)):
         return True
 
-    # januar 2014
-    m = re.match('^([a-z]+) (\d{4})$', val)
-    if m and is_valid_month_or_season(m.group(1)):
+    # 1.–2. januar 2014
+    m = re.match('^(\d\d?)\.–(\d\d?)\. ([a-z]+) (\d{4})$', val)
+    if m and is_valid_month(m.group(3)):
+        return True
+
+    # 1. januar – 2. februar 2014
+    m = re.match('^(\d\d?)\. ([a-z]+) – (\d\d?)\. ([a-z]+) (\d{4})$', val)
+    if m and is_valid_month(m.group(2)) and is_valid_month(m.group(4)):
         return True
 
     # 1. januar 2014 – 1. februar 2015
@@ -138,7 +143,12 @@ def is_valid_date(val):
     if m and is_valid_month(m.group(2)) and is_valid_month(m.group(5)):
         return True
 
-    # januar–februar 2015
+    # januar 2014
+    m = re.match('^([a-z]+) (\d{4})$', val)
+    if m and is_valid_month_or_season(m.group(1)):
+        return True
+
+    # januar–februar 2014
     m = re.match('^([a-z]+)–([a-z]+) (\d{4})$', val)
     if m and is_valid_month_or_season(m.group(1)) and is_valid_month_or_season(m.group(2)):
         return True
@@ -146,11 +156,6 @@ def is_valid_date(val):
     # januar 2014 – februar 2015
     m = re.match('^([a-z]+) (\d{4}) – ([a-z]+) (\d{4})$', val)
     if m and is_valid_month_or_season(m.group(1)) and is_valid_month_or_season(m.group(3)):
-        return True
-
-    # 1.–2. juni 2015
-    m = re.match('^(\d\d?)\.–(\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_month(m.group(3)):
         return True
 
     return False

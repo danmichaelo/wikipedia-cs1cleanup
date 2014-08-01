@@ -25,6 +25,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertFalse(is_valid_date('januar 2014–februar 2015'))
         self.assertTrue(is_valid_date('januar–februar 2014'))
         self.assertFalse(is_valid_date('januar – februar 2014–februar'))
+        self.assertTrue(is_valid_date('28. februar – 6. mars 2005'))
 
     def test_date_suggestions(self):
         self.assertEqual('09.04.2008', get_date_suggestion('[[09.04.2008]]'))
