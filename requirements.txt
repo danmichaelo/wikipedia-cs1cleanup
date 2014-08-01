@@ -1,0 +1,2 @@
+git+git://github.com/danmichaelo/mwtemplates.git
+git+git://github.com/mwclient/mwclient.git
