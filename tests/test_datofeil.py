@@ -26,6 +26,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertTrue(is_valid_date('januar–februar 2014'))
         self.assertFalse(is_valid_date('januar – februar 2014–februar'))
         self.assertTrue(is_valid_date('28. februar – 6. mars 2005'))
+        self.assertTrue(is_valid_date('1942–1991'))
 
     def test_date_suggestions(self):
         self.assertEqual('09.04.2008', get_date_suggestion('[[09.04.2008]]'))
@@ -48,6 +49,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('vinter 1971', get_date_suggestion('Winter, 1971'))
         self.assertEqual(None, get_date_suggestion('c. 2012'))
         self.assertEqual(None, get_date_suggestion('Nr 6, 2012'))
+        self.assertEqual('1942–1991', get_date_suggestion('1942 - 1991'))
 
     def test_date_suggestions_en(self):
         self.assertEqual('mai 2012', get_date_suggestion('May 2012'))

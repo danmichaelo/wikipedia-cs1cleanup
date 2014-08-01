@@ -122,6 +122,10 @@ def is_valid_date(val):
     if re.match('^\d{4}$', val):
         return True
 
+    # 2014–2015
+    if re.match('^\d{4}–\d{4}$', val):
+        return True
+
     # 1.1.2001
     if re.match('^\d\d?\.\d\d?\.\d{4}$', val):
         return True
@@ -185,6 +189,11 @@ def get_date_suggestion(val):
     m = re.match('^\[{0,2}(\d{4})\]{0,2}$', val)
     if m:
         return '%s' % (m.group(1))
+
+    # 2004-2005 : whitespace of tankestrek/bindestrek
+    m = re.match('^(\d{4})\s?[-–]\s?(\d{4})$', val)
+    if m:
+        return '%s–%s' % (m.group(1), m.group(2))
 
     # ISO-format:
     # - Fjern lenking og rett tankestrek -> bindestrek
