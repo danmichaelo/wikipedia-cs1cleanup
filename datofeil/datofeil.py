@@ -280,7 +280,7 @@ class Template:
         self.unresolved = []
 
         for p in tpl.parameters:
-            if p.key in ['dato', 'besøksdato', 'arkivdato', 'utgivelsesdato', 'date', 'accessdate', 'archivedate', 'laydate', 'hämtdatum', 'arkivdatum']:
+            if p.key in ['dato', 'utgivelsesdato', 'date', 'laydate', 'arkivdato', 'archivedate', 'arkivdatum', 'besøksdato', 'accessdate', 'hämtdatum']:
                 self.dato.append(p)
             if p.key in ['utgivelsesår', 'år', 'year']:
                 self.aar.append(p)
@@ -302,7 +302,8 @@ class Template:
                 p.value = suggest
                 continue
 
-            self.unresolved.append('%s=%s' % (p.key, p.value))
+            if not self.complex_replacements_year(p):
+                self.unresolved.append('%s=%s' % (p.key, p.value))
 
         for p in self.dato:
 
@@ -342,6 +343,34 @@ class Template:
                         return True
 
         return False
+
+    def complex_replacements_year(self, p):
+        """
+        Replacements involving more than one field/value
+
+        Returns: True if a replacement has been made, False otherwise
+        """
+
+        q = [x for x in self.dato if x.key in ['dato', 'utgivelsesdato', 'date'] and x.value != '']
+        if len(q) != 0:
+            return False
+
+        suggest = None
+        if is_valid_date(p.value):
+            suggest = p.value
+        else:
+            suggest2 = get_date_suggestion(p.value)
+            if suggest2:
+                suggest = suggest2
+
+        if suggest is None:
+            return False
+
+        param = 'date' if p.key == 'year' else 'dato'
+        self.modified.append({'key': param, 'old': p.value, 'new': suggest, 'complex': True})
+        self.tpl.parameters[param] = suggest
+        del self.tpl.parameters[p.key]
+        return True
 
 
 class Page:
