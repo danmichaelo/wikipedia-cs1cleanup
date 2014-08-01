@@ -188,9 +188,9 @@ def get_date_suggestion(val):
 
     # ISO-format:
     # - Fjern lenking og rett tankestrek -> bindestrek
-    m = re.match('^\[{0,2}(\d{4})[-–](\d{2})[-–](\d{2})\]{0,2}$', val)
+    m = re.match('^\[{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)\]{0,2}$', val)
     if m:
-        return '%s-%s-%s' % (m.group(1), m.group(2), m.group(3))
+        return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
 
     # Norsk datoformat (1.1.2011)
     # - Fjern lenking og rett bindestrek -> punktum
