@@ -87,6 +87,9 @@ def is_valid_year(val):
     if re.match('^\d{4}$', val):
         return True
 
+    if re.match('^ca?\. \d{4}$', val):
+        return True
+
 
 def get_year_suggestion(val):
 

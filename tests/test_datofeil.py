@@ -62,6 +62,8 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('12. mai 2012', get_date_suggestion('12. maj 2012'))
 
     def test_year_valid(self):
+        self.assertTrue(is_valid_year('c. 2014'))
+        self.assertTrue(is_valid_year('ca. 2014'))
         self.assertTrue(is_valid_year('2014'))
         self.assertFalse(is_valid_year('[[2014]]'))
 
