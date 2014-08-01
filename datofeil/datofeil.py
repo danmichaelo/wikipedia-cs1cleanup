@@ -173,6 +173,8 @@ def get_date_suggestion(val):
     val = re.sub('<!--.*?-->', '', val)  # strip comments
     val = re.sub('&ndash;', '–', val)    # bruk unicode
     val = re.sub(',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
+    val = re.sub(r'\[\[.+?\|(.+?)\]\]', r'\1', val)    # strip wikilinks
+    val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
     val = val.strip()
 
     if is_valid_date(val):
