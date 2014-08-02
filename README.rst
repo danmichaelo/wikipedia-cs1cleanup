@@ -25,3 +25,5 @@ Examples:
     * ``15, marts 2010`` → ``15. mars 2010``
     * ``July–September 1986`` → ``juli–september 1986``
     * ``23-29. februar 2008`` → ``23.–29. februar 2008`` (manglende punktum, og bindestrek — tankestrek)
+    * ``6AUG2012`` → ``6. august 2012``
+

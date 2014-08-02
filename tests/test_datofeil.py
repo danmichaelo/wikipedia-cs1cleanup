@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 import unittest
 
-from datofeil import is_valid_date, get_date_suggestion, is_valid_year, get_year_suggestion
+from datofeil import is_valid_date, get_date_suggestion, is_valid_year, get_year_suggestion, pre_clean
 
 
 class TestPreprocessor(unittest.TestCase):
@@ -28,14 +28,19 @@ class TestPreprocessor(unittest.TestCase):
         self.assertTrue(is_valid_date('28. februar – 6. mars 2005'))
         self.assertTrue(is_valid_date('1942–1991'))
 
+    def test_pre_clean(self):
+        self.assertEqual('2006-10-01', pre_clean('[[2006]]-[[1. oktober|10-01]]'))
+
     def test_date_suggestions(self):
         self.assertEqual('09.04.2008', get_date_suggestion('[[09.04.2008]]'))
         self.assertEqual('09.04.2008', get_date_suggestion('[[09-04-2008]]'))
         self.assertEqual('2006-10-21', get_date_suggestion('[[2006-10-21]]'))
+        self.assertEqual('2006-10-01', get_date_suggestion('[[2006]]-[[1. oktober|10-01]]'))
         self.assertEqual('24. oktober 2007', get_date_suggestion('[[24. oktober]] 2007'))
         self.assertEqual('1. januar 2014', get_date_suggestion('[[1. januar]] [[2014]]'))
         self.assertEqual('1. januar 2014', get_date_suggestion('[[1. januar]], [[2014]]'))
         self.assertEqual('30. november 2010', get_date_suggestion('30. november 2010 kl. 14:12'))
+        self.assertEqual('30. november 2010', get_date_suggestion('30. november 2010 14:12'))
         self.assertEqual('30. november 2010', get_date_suggestion('30,november 2010'))
         self.assertEqual('30. november 2010', get_date_suggestion('30.novembir 2010'))
         self.assertEqual('30. november 2010', get_date_suggestion('[[30 november 2010]]'))
@@ -49,6 +54,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('vinter 1971', get_date_suggestion('Winter, 1971'))
         self.assertEqual(None, get_date_suggestion('c. 2012'))
         self.assertEqual(None, get_date_suggestion('Nr 6, 2012'))
+        self.assertEqual(None, get_date_suggestion('2007 - uke 25'))
         self.assertEqual('1942–1991', get_date_suggestion('1942 - 1991'))
 
     def test_date_suggestions_en(self):

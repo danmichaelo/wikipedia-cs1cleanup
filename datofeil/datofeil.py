@@ -36,6 +36,7 @@ seasonsdict = {
     'spring': 'vår',
     'summer': 'sommer',
     'autumn': 'høst',
+    'fall': 'høst',
     'winter': 'vinter',
 }
 
@@ -168,19 +169,24 @@ def is_valid_date(val):
     return False
 
 
+def pre_clean(val):
+    # Pre-clean
+    val = re.sub('<!--.*?-->', '', val)  # strip comments
+    val = re.sub('&ndash;', '–', val)    # bruk unicode
+    val = re.sub(r',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
+    val = re.sub(r',? \d\d?:\d\d$', '', val)  # fjern klokkeslett
+    val = re.sub(r'\[\[[^\]]+?\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
+    val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
+    val = val.strip()
+    return val
+
+
 def get_date_suggestion(val):
     """
     Involving just one field/value
     """
 
-    # Pre-clean
-    val = re.sub('<!--.*?-->', '', val)  # strip comments
-    val = re.sub('&ndash;', '–', val)    # bruk unicode
-    val = re.sub(',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
-    val = re.sub(r'\[\[.+?\|(.+?)\]\]', r'\1', val)    # strip wikilinks
-    val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
-    val = val.strip()
-
+    val = pre_clean(val)
     if is_valid_date(val):
         return val
 
@@ -196,14 +202,14 @@ def get_date_suggestion(val):
         return '%s–%s' % (m.group(1), m.group(2))
 
     # ISO-format:
-    # - Fjern lenking og rett tankestrek -> bindestrek
-    m = re.match('^\[{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)\]{0,2}$', val)
+    # - Fjern støy og rett tankestrek -> bindestrek
+    m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
     if m:
         return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
 
     # Norsk datoformat (1.1.2011)
-    # - Fjern lenking og rett bindestrek -> punktum
-    m = re.match('^\[{0,2}(\d\d?)[.-](\d\d?)[.-](\d{4})\]{0,2}$', val)
+    # - Rett bindestrek -> punktum
+    m = re.match('^(\d\d?)[.-](\d\d?)[.-](\d{4})$', val)
     if m:
         return '%s.%s.%s' % (m.group(1), m.group(2), m.group(3))
 
@@ -220,7 +226,7 @@ def get_date_suggestion(val):
     # - Punctuation errors: (1.januar 2014, 1, januar 2014, 1 mars. 2010) -> 1. januar 2014
     # - Avlenking: [[1. januar]] [[2014]] -> 1. januar 2014
     # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
-    m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[\., ]{1,2}([a-zA-Z]+)\]{0,2}[\., ]{1,2}\[{0,2}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
+    m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
     if m:
         mnd = get_month(m.group(2).lower())
         if mnd is not None:
@@ -475,7 +481,7 @@ def main():
     print
     print "Unresolved date errors:"
     for p in unresolved:
-        print '| %(page)s || %(key)s || %(value)s\n|-' % p
+        print '| [[%(page)s]] || %(key)s || %(value)s\n|-' % p
 
     cnt['datesOk'] = cnt['datesChecked'] - cnt['datesModified'] - cnt['datesUnresolved']
     print
