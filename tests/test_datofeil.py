@@ -35,6 +35,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('09.04.2008', get_date_suggestion('[[09.04.2008]]'))
         self.assertEqual('09.04.2008', get_date_suggestion('[[09-04-2008]]'))
         self.assertEqual('2006-10-21', get_date_suggestion('[[2006-10-21]]'))
+        self.assertEqual('2011-04-03', get_date_suggestion('2011-04-03.'))
         self.assertEqual('2006-10-01', get_date_suggestion('[[2006]]-[[1. oktober|10-01]]'))
         self.assertEqual('24. oktober 2007', get_date_suggestion('[[24. oktober]] 2007'))
         self.assertEqual('1. januar 2014', get_date_suggestion('[[1. januar]] [[2014]]'))

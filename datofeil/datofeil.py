@@ -177,6 +177,7 @@ def pre_clean(val):
     # Pre-clean
     val = re.sub('<!--.*?-->', '', val)  # strip comments
     val = re.sub('&ndash;', '–', val)    # bruk unicode
+    val = re.sub('&nbsp;', ' ', val)     # bruk vanlig mellomrom
     val = re.sub(r',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
     val = re.sub(r',? \d\d?:\d\d$', '', val)  # fjern klokkeslett
     val = re.sub(r'\[\[[^\]]+?\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
@@ -206,14 +207,16 @@ def get_date_suggestion(val):
         return '%s–%s' % (m.group(1), m.group(2))
 
     # ISO-format:
-    # - Fjern støy og rett tankestrek -> bindestrek
+    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+    # - Korriger tankestrek -> bindestrek
     m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
     if m:
         return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
 
     # Norsk datoformat (1.1.2011)
+    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
     # - Rett bindestrek -> punktum
-    m = re.match('^(\d\d?)[.-](\d\d?)[.-](\d{4})$', val)
+    m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[.-](\d\d?)[.-](\d{4})[^a-zA-Z0-9]{0,2}$', val)
     if m:
         return '%s.%s.%s' % (m.group(1), m.group(2), m.group(3))
 
@@ -227,8 +230,8 @@ def get_date_suggestion(val):
             return '%s.20%s' % (m.group(1), m.group(2))
 
     # Norsk datoformat (1. september 2014)
+    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
     # - Punctuation errors: (1.januar 2014, 1, januar 2014, 1 mars. 2010) -> 1. januar 2014
-    # - Avlenking: [[1. januar]] [[2014]] -> 1. januar 2014
     # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
     m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
     if m:
