@@ -50,8 +50,10 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('januar–februar 2002', get_date_suggestion('januar - februar 2002'))  # punctuation
         self.assertEqual('mai 2012', get_date_suggestion('Mai 2012'))
         self.assertEqual('mai 2012', get_date_suggestion('Mail 2012'))
-        self.assertEqual('høst 2012', get_date_suggestion('host 2012'))
-        self.assertEqual('vinter 1971', get_date_suggestion('Winter, 1971'))
+        self.assertEqual('høsten 2012', get_date_suggestion('høst 2012'))
+        self.assertEqual('våren 2012', get_date_suggestion('vår 2012'))
+        self.assertEqual('høsten 2012', get_date_suggestion('hosten 2012'))
+        self.assertEqual('vinteren 1971', get_date_suggestion('Winter, 1971'))
         self.assertEqual(None, get_date_suggestion('c. 2012'))
         self.assertEqual(None, get_date_suggestion('Nr 6, 2012'))
         self.assertEqual(None, get_date_suggestion('2007 - uke 25'))

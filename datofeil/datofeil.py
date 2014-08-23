@@ -15,7 +15,7 @@ from mwtemplates import TemplateEditor
 from .correct import correct
 
 months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']
-seasons = ['vår', 'sommer', 'høst', 'vinter']
+seasons = ['våren', 'sommeren', 'høsten', 'vinteren']
 monthsdict = {
     'jan': 'januar',
     'feb': 'februar',
@@ -33,11 +33,15 @@ monthsdict = {
     'des': 'desember',
 }
 seasonsdict = {
-    'spring': 'vår',
-    'summer': 'sommer',
-    'autumn': 'høst',
-    'fall': 'høst',
-    'winter': 'vinter',
+    'vår': 'våren',
+    'sommer': 'sommeren',
+    'høst': 'høsten',
+    'vinter': 'vinteren',
+    'spring': 'våren',
+    'summer': 'sommeren',
+    'autumn': 'høsten',
+    'fall': 'høsten',
+    'winter': 'vinteren',
 }
 
 
@@ -255,15 +259,15 @@ def get_date_suggestion(val):
         if mnd is not None:
             return '%s.–%s. %s %s' % (m.group(1), m.group(2), mnd, m.group(4))
 
-    # month/season year (January 2014, januar, 2014, [[januar 2014]], January 2014, ...) -> januar 2014
-    m = re.match('^[^a-zA-Z0-9]{0,2}([a-zA-Z]+)[\., ]{1,2}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
+    # month/season year (January 2014, januar, 2014, høst 2014, [[januar 2014]], January 2014, ...) -> januar 2014
+    m = re.match('^[^a-zA-Z0-9]{0,2}([a-zA-ZøåØÅ]+)[\., ]{1,2}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
     if m:
         mnd = get_month_or_season(m.group(1).lower())
         if mnd is not None:
             return '%s %s' % (mnd, m.group(2))
 
     # month/season–month/season year (februar–mars 2010, vår–sommer 2012, Atumn–winter 2010)
-    m = re.match('^([a-zA-Z]+)\s?[-–]\s?([a-zA-Z]+) (\d{4})$', val)
+    m = re.match('^([a-zA-ZøåØÅ]+)\s?[-–]\s?([a-zA-ZøåØÅ]+) (\d{4})$', val)
     if m:
         mnd1 = get_month_or_season(m.group(1).lower())
         mnd2 = get_month_or_season(m.group(2).lower())
