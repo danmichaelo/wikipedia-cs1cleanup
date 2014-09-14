@@ -32,6 +32,11 @@ class TestPreprocessor(unittest.TestCase):
         self.assertFalse(is_valid_date('vår 2015'))
         self.assertFalse(is_valid_date('høst 2015'))
 
+    def test_misc(self):
+        self.assertTrue(is_valid_date('udatert'))
+        self.assertFalse(is_valid_date('n.d.'))
+        self.assertFalse(is_valid_date('nd'))
+
     def test_pre_clean(self):
         self.assertEqual('2006-10-01', pre_clean('[[2006]]-[[1. oktober|10-01]]'))
 

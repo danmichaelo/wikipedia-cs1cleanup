@@ -119,6 +119,10 @@ def is_valid_date(val):
         # print 'Warning: empty date found'
         return True  # empty
 
+    if re.match('^udatert$', val):
+        # print 'Warning: empty date found'
+        return True  # empty
+
     # 2014-01-01
     if re.match('^\d{4}-\d{2}-\d{2}$', val):
         return True
