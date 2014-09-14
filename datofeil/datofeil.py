@@ -120,8 +120,10 @@ def is_valid_date(val):
         return True  # empty
 
     if re.match('^udatert$', val):
-        # print 'Warning: empty date found'
-        return True  # empty
+        return True
+
+    if re.match('^u\.d\.$', val):
+        return True
 
     # 2014-01-01
     if re.match('^\d{4}-\d{2}-\d{2}$', val):
@@ -198,6 +200,11 @@ def get_date_suggestion(val):
     val = pre_clean(val)
     if is_valid_date(val):
         return val
+
+    # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
+    m = re.match('^[a-zA-Z]*\s?ukjent\s?[a-zA-Z]*$', val)
+    if m:
+        return 'udatert'
 
     # Kun årstall
     # - Fjern lenking

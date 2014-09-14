@@ -34,6 +34,7 @@ class TestPreprocessor(unittest.TestCase):
 
     def test_misc(self):
         self.assertTrue(is_valid_date('udatert'))
+        self.assertTrue(is_valid_date('u.d.'))
         self.assertFalse(is_valid_date('n.d.'))
         self.assertFalse(is_valid_date('nd'))
 
