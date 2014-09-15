@@ -68,6 +68,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual(None, get_date_suggestion('c. 2012'))
         self.assertEqual(None, get_date_suggestion('Nr 6, 2012'))
         self.assertEqual(None, get_date_suggestion('2007 - uke 25'))
+        self.assertEqual(None, get_date_suggestion('julen 2012'))
         self.assertEqual('1942–1991', get_date_suggestion('1942 - 1991'))
 
     def test_date_suggestions_en(self):

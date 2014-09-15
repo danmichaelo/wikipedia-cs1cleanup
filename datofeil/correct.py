@@ -25,7 +25,7 @@ def known(words):
 
 
 def correct(word):
-    if len(word) <= 4:
+    if len(word) <= 5:
         candidates = known([word]) or known(edits1(word)) or [word]
     else:
         candidates = known([word]) or known(edits1(word)) or known_edits2(word) or [word]
