@@ -6,7 +6,7 @@ import sys
 import time
 import argparse
 import codecs
-import simplejson as json
+import json
 import urllib2
 
 from mwclient import Site
