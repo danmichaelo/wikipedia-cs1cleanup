@@ -444,7 +444,12 @@ class Page:
 
             time.sleep(3)
 
-            res = page.save(te.wikitext(), summary=summary)
+            try:
+                res = page.save(te.wikitext(), summary=summary)
+            except mwclient.errors.ProtectedPageError:
+                print
+                print 'ERROR: Page protected, could not save'
+                print
 
             f = codecs.open('modified.txt', 'a', 'utf8')
             for x in self.modified:
