@@ -3,6 +3,11 @@ from __future__ import unicode_literals
 
 import os
 import psutil
+from mem_top import mem_top
+import gc
+import objgraph
+from guppy import hpy
+
 
 def memory_usage_psutil():
     # return the memory usage in MB
@@ -10,6 +15,7 @@ def memory_usage_psutil():
     mem = process.get_memory_info()[0] / float(2 ** 20)
     return mem
 
+import sys
 import re
 import sys
 import time
@@ -43,6 +49,7 @@ monthsdict = {
     'nov': 'november',
     'dec': 'desember',
     'des': 'desember',
+    'march': 'mars',
 }
 seasonsdict = {
     'vår': 'våren',
@@ -121,6 +128,11 @@ def get_year_suggestion(val):
     m = re.match('^\[\[(\d{4})\]\]$', val)
     if m:
         return m.group(1)
+
+    # Ca. 2011
+    m = re.match('^ca. (\d{4})$', val, flags=re.I)
+    if m:
+        return 'ca. %s' % m.group(1)
 
 
 def is_valid_date(val):
@@ -214,7 +226,12 @@ def get_date_suggestion(val):
         return val
 
     # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
-    m = re.match('^[a-zA-Z]*\s?ukjent\s?[a-zA-Z]*$', val)
+    m = re.match('^[a-zA-Z]*\s?ukjent\s?[a-zA-Z]*$', val, flags=re.I)
+    if m:
+        return 'udatert'
+
+    # 'Udatert', ...
+    m = re.match('^[a-zA-Z]*\s?udatert\s?[a-zA-Z]*$', val, flags=re.I)
     if m:
         return 'udatert'
 
@@ -235,6 +252,14 @@ def get_date_suggestion(val):
     m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
     if m:
         return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
+
+    # YYYY-MM:
+    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+    # - Korriger tankestrek -> bindestrek
+    # - Endre til måned år
+    m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
+    if m:
+        return '%s %s' % (months[int(m.group(2)) - 1], m.group(1))
 
     # Norsk datoformat (1.1.2011)
     # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
@@ -429,15 +454,21 @@ class Page:
         self.modified = []
         self.unresolved = []
 
-        te = TemplateEditor(page.edit())
+        # te = page.text()
+        te = TemplateEditor(page.text())
+
         modified = False
-        for k, v in te.templates.items():
-            if k in ['Kilde www', 'Kilde bok', 'Kilde artikkel', 'Kilde avhandling', 'Cite web', 'Citeweb', 'Cite news', 'Cite journal', 'Cite book', 'Tidningsref', 'Webbref', 'Bokref']:
-                for tpl in v:
-                    t = Template(tpl)
-                    self.checked += t.checked
-                    self.modified.extend(t.modified)
-                    self.unresolved.extend(t.unresolved)
+        for k, v in te.templates.iteritems():
+            pass
+        #     # if k in ['Kilde www', 'Kilde bok', 'Kilde artikkel', 'Kilde avhandling', 'Cite web', 'Citeweb', 'Cite news', 'Cite journal', 'Cite book', 'Tidningsref', 'Webbref', 'Bokref']:
+            #     for tpl in v:
+            #         pass
+            #         t = Template(tpl)
+            #         self.checked += t.checked
+            #         self.modified.extend(t.modified)
+            #         self.unresolved.extend(t.unresolved)
+
+        return
 
         for u in self.unresolved:
             u['page'] = page.name
@@ -488,6 +519,10 @@ def main():
 
     else:
         n = 0
+
+        hp = hpy()
+        before = hp.heap()
+
         for page in cat.members():
             n += 1
             logging.info('%02d %s - %.1f MB', n, page.name, memory_usage_psutil())
@@ -518,7 +553,7 @@ def main():
     unresolvedTxt += u'Unresolved errors:\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi\n'
 
     for p in unresolved:
-        unresolvedTxt += u'| [[%(page)s]] || %(key)s || %(value)s\n|-\n' % p
+        unresolvedTxt += u'| [[%(page)s]] || %(key)s || <nowiki>%(value)s</nowiki>\n|-\n' % p
 
     page = site.pages[u'Bruker:DanmicholoBot/Datofiks/Uløst']
     page.save(unresolvedTxt, summary='Oppdaterer')

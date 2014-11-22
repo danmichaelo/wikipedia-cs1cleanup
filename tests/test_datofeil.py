@@ -70,6 +70,9 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual(None, get_date_suggestion('2007 - uke 25'))
         self.assertEqual(None, get_date_suggestion('julen 2012'))
         self.assertEqual('1942–1991', get_date_suggestion('1942 - 1991'))
+        self.assertEqual('udatert', get_date_suggestion('UDATERT'))
+        self.assertEqual('udatert', get_date_suggestion('UKJent daTO'))
+        self.assertEqual('oktober 1988', get_date_suggestion('1988-10'))
 
     def test_date_suggestions_en(self):
         self.assertEqual('mai 2012', get_date_suggestion('May 2012'))
@@ -79,6 +82,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('6. juli 2011', get_date_suggestion('July 6, 2011'))
         self.assertEqual('oktober–november 1999', get_date_suggestion('October-November 1999'))
         self.assertEqual('15. juni 2006', get_date_suggestion('June 15, 2006 <!--DASHBot-->'))
+        self.assertEqual('30. mars 2013', get_date_suggestion('30 March 2013'))
 
     def test_date_suggestions_sv(self):
         self.assertEqual('12. mai 2012', get_date_suggestion('12. maj 2012'))
@@ -91,6 +95,7 @@ class TestPreprocessor(unittest.TestCase):
 
     def test_year_suggestions(self):
         self.assertEqual('2014', get_year_suggestion('[[2014]]'))
+        self.assertEqual('ca. 2014', get_year_suggestion('Ca. 2014'))
 
 
 if __name__ == '__main__':
