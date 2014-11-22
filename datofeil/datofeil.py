@@ -14,6 +14,9 @@ from mwtemplates import TemplateEditor
 
 from .correct import correct
 
+import logging
+logger = logging.getLogger('datofeil')
+
 months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']
 seasons = ['våren', 'sommeren', 'høsten', 'vinteren']
 monthsdict = {
@@ -438,18 +441,13 @@ class Page:
             else:
                 summary = '[Datofiks] Fikset %d datoer' % (len(self.modified))
 
-            print
-            print '%s: %d modified' % (page.name, len(self.modified))
-            print summary
-
+            logger.info('%s: %d modified : %s', page.name, len(self.modified), summary)
             time.sleep(3)
 
             try:
                 res = page.save(te.wikitext(), summary=summary)
             except mwclient.errors.ProtectedPageError:
-                print
-                print 'ERROR: Page protected, could not save'
-                print
+                logger.error('ERROR: Page protected, could not save')
 
             f = codecs.open('modified.txt', 'a', 'utf8')
             for x in self.modified:
@@ -496,20 +494,23 @@ def main():
             # if cnt['pagesChecked'] > 100:
             #     break
 
-    print
-    print "Pages with no known templates with date errors:"
-    for p in pagesWithNoKnownErrors:
-        print ' - %s' % p
-
-    print
-    print "Unresolved date errors:"
-    for p in unresolved:
-        print '| [[%(page)s]] || %(key)s || %(value)s\n|-' % p
+    # print
+    # print "Pages with no known templates with date errors:"
+    # for p in pagesWithNoKnownErrors:
+    #     print ' - %s' % p
 
     cnt['datesOk'] = cnt['datesChecked'] - cnt['datesModified'] - cnt['datesUnresolved']
-    print
-    print "Pages checked: %(pagesChecked)d, dates checked: %(datesChecked)d, of which" % cnt
-    print "  OK: %(datesOk)d, modified: %(datesModified)d, unresolved errors: %(datesUnresolved)d" % cnt
+
+    unresolvedTxt = u"Pages checked: %(pagesChecked)d, dates checked: %(datesChecked)d, of which<br>\n" % cnt
+    unresolvedTxt += "  OK: %(datesOk)d, modified: %(datesModified)d, unresolved errors: %(datesUnresolved)d\n\n" % cnt
+    unresolvedTxt += u'Unresolved errors:\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi\n'
+
+    for p in unresolved:
+        unresolvedTxt += u'| [[%(page)s]] || %(key)s || %(value)s\n|-\n' % p
+
+    page = site.pages[u'Bruker:DanmicholoBot/Datofiks/Uløst']
+    page.save(unresolvedTxt, summary='Oppdaterer')
+
 
 if __name__ == '__main__':
     main()
