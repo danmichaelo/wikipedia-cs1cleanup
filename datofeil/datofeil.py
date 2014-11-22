@@ -550,7 +550,7 @@ def main():
 
     unresolvedTxt = u"Pages checked: %(pagesChecked)d, dates checked: %(datesChecked)d, of which<br>\n" % cnt
     unresolvedTxt += "  OK: %(datesOk)d, modified: %(datesModified)d, unresolved errors: %(datesUnresolved)d\n\n" % cnt
-    unresolvedTxt += u'Unresolved errors:\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi\n'
+    unresolvedTxt += u'Unresolved errors:\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi\n|-\n'
 
     for p in unresolved:
         unresolvedTxt += u'| [[%(page)s]] || %(key)s || <nowiki>%(value)s</nowiki>\n|-\n' % p
