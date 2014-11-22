@@ -3,11 +3,6 @@ from __future__ import unicode_literals
 
 import os
 import psutil
-from mem_top import mem_top
-import gc
-import objgraph
-from guppy import hpy
-
 
 def memory_usage_psutil():
     # return the memory usage in MB
@@ -459,16 +454,13 @@ class Page:
 
         modified = False
         for k, v in te.templates.iteritems():
-            pass
-        #     # if k in ['Kilde www', 'Kilde bok', 'Kilde artikkel', 'Kilde avhandling', 'Cite web', 'Citeweb', 'Cite news', 'Cite journal', 'Cite book', 'Tidningsref', 'Webbref', 'Bokref']:
-            #     for tpl in v:
-            #         pass
-            #         t = Template(tpl)
-            #         self.checked += t.checked
-            #         self.modified.extend(t.modified)
-            #         self.unresolved.extend(t.unresolved)
-
-        return
+            if k in ['Kilde www', 'Kilde bok', 'Kilde artikkel', 'Kilde avhandling', 'Cite web', 'Citeweb', 'Cite news', 'Cite journal', 'Cite book', 'Tidningsref', 'Webbref', 'Bokref']:
+                 for tpl in v:
+                     pass
+                     t = Template(tpl)
+                     self.checked += t.checked
+                     self.modified.extend(t.modified)
+                     self.unresolved.extend(t.unresolved)
 
         for u in self.unresolved:
             u['page'] = page.name
@@ -519,10 +511,6 @@ def main():
 
     else:
         n = 0
-
-        hp = hpy()
-        before = hp.heap()
-
         for page in cat.members():
             n += 1
             logging.info('%02d %s - %.1f MB', n, page.name, memory_usage_psutil())
