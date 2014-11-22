@@ -1,6 +1,15 @@
 # encoding=utf8
 from __future__ import unicode_literals
 
+import os
+import psutil
+
+def memory_usage_psutil():
+    # return the memory usage in MB
+    process = psutil.Process(os.getpid())
+    mem = process.get_memory_info()[0] / float(2 ** 20)
+    return mem
+
 import re
 import sys
 import time
@@ -478,7 +487,10 @@ def main():
         p = Page(page)
 
     else:
+        n = 0
         for page in cat.members():
+            n += 1
+            logging.info('%02d %s - %.1f MB', n, page.name, memory_usage_psutil())
             # print "-----------[ %s ]-----------" % page.name
             p = Page(page)
             cnt['pagesChecked'] += 1

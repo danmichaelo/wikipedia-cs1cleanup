@@ -17,5 +17,5 @@ setup(name='datofeil',
       url='https://github.com/danmichaelo/datofeil',
       license='MIT',
       packages=['datofeil'],
-      install_requires=['mwclient', 'mwtemplates']
+      install_requires=['mwclient', 'mwtemplates', 'psutil']
       )
