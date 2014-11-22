@@ -1,0 +1,4 @@
+# m h  dom mon dow   command
+MAILTO=""
+#
+10 3 * * * cd wikipedia-datofeil && jsub -once -j y -cwd -N nowiki-datofiks -mem 368m -o nowiki-datofiks.log tool-labs.sh
