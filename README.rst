@@ -6,8 +6,13 @@ https://no.wikipedia.org/wiki/Bruker:DanmicholoBot/Datofikslogg
 
 Install::
 
-    pip install -r requirements.txt
+    virtualenv ENV
+    pip install -e .
     cp config.dist.json config.json
+
+Crontab::
+
+    crontab tool-labs.crontab
 
 Add your Wikimedia credentials to ``config.json`` and run ``python run.py``
 
