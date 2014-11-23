@@ -1,8 +1,41 @@
 # encoding=utf8
 from __future__ import unicode_literals
 import unittest
+import mock
 
-from datofeil import is_valid_date, get_date_suggestion, is_valid_year, get_year_suggestion, pre_clean
+from datofeil import is_valid_date, get_date_suggestion, is_valid_year, get_year_suggestion, pre_clean, Template
+
+
+def getTemplateMock(parameters):
+
+    def makeParam(p):
+        param = mock.Mock()
+        param.key = p[0]
+        param.value = p[1]
+        return param
+
+    def mock_getitem(self, key):
+        if key not in self._items:
+            return None
+        return self._items[key]
+
+    def mock_delitem(self, key):
+        if key not in self._items:
+            return None
+        del self._items[key]
+
+    def mock_setitem(self, key, val):
+        self._items[key] = makeParam((key, val))
+
+    tpl = mock.Mock()
+    params = mock.MagicMock()
+    params._items = {p[0]: makeParam(p) for p in parameters.items()}
+    params.__getitem__ = mock_getitem
+    params.__delitem__ = mock_delitem
+    params.__setitem__ = mock_setitem
+    params.__iter__.return_value = params._items.values()
+    tpl.parameters = params
+    return Template(tpl)
 
 
 class TestPreprocessor(unittest.TestCase):
@@ -27,12 +60,12 @@ class TestPreprocessor(unittest.TestCase):
         self.assertFalse(is_valid_date('januar – februar 2014–februar'))
         self.assertTrue(is_valid_date('28. februar – 6. mars 2005'))
         self.assertTrue(is_valid_date('1942–1991'))
+
+    def test_misc(self):
         self.assertTrue(is_valid_date('våren 2015'))
         self.assertTrue(is_valid_date('høsten 2015'))
         self.assertFalse(is_valid_date('vår 2015'))
         self.assertFalse(is_valid_date('høst 2015'))
-
-    def test_misc(self):
         self.assertTrue(is_valid_date('udatert'))
         self.assertTrue(is_valid_date('u.d.'))
         self.assertFalse(is_valid_date('n.d.'))
@@ -55,6 +88,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('30. november 2010', get_date_suggestion('30,november 2010'))
         self.assertEqual('30. november 2010', get_date_suggestion('30.novembir 2010'))
         self.assertEqual('30. november 2010', get_date_suggestion('[[30 november 2010]]'))
+        self.assertEqual(None, get_date_suggestion('30 xyz 2010'))
         self.assertEqual('23. oktober 1999 – 19. februar 2000', get_date_suggestion('23. oktober 1999 - 19. februar 2000'))
         self.assertEqual('27. september – 4. oktober 2000', get_date_suggestion('27. september–4. oktober 2000'))
         self.assertEqual('21.–26. april 2002', get_date_suggestion('21.-26. april 2002'))  # bindestrek
@@ -73,6 +107,12 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('udatert', get_date_suggestion('UDATERT'))
         self.assertEqual('udatert', get_date_suggestion('UKJent daTO'))
         self.assertEqual('oktober 1988', get_date_suggestion('1988-10'))
+        self.assertEqual('udatert', get_date_suggestion('u.å.'))
+        self.assertEqual('udatert', get_date_suggestion('n.d'))
+        self.assertEqual(None, get_date_suggestion('n_d'))
+        self.assertEqual(None, get_date_suggestion('n.d_'))
+        self.assertEqual(None, get_date_suggestion('u_å_'))
+        self.assertEqual('10. februar 2012', get_date_suggestion('10th of February, 2012'))
 
     def test_date_suggestions_en(self):
         self.assertEqual('mai 2012', get_date_suggestion('May 2012'))
@@ -96,6 +136,11 @@ class TestPreprocessor(unittest.TestCase):
     def test_year_suggestions(self):
         self.assertEqual('2014', get_year_suggestion('[[2014]]'))
         self.assertEqual('ca. 2014', get_year_suggestion('Ca. 2014'))
+
+    def test_complex1(self):
+        x = getTemplateMock({'utgivelsesår': '1951-53'})
+        self.assertEqual(x.tpl.parameters['utgivelsesår'], None)
+        self.assertEqual(x.tpl.parameters['dato'].value, '1951–1953')
 
 
 if __name__ == '__main__':

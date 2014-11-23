@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import os
 import psutil
 
+
 def memory_usage_psutil():
     # return the memory usage in MB
     process = psutil.Process(os.getpid())
@@ -211,6 +212,17 @@ def pre_clean(val):
     return val
 
 
+def parseYear(y):
+    if len(y) == 4:
+        return y
+    elif len(y) == 2:
+        y = int(y)
+        if y >= 20:
+            return '19%s' % (y)
+        if y <= 14:
+            return '20%s' % (y)
+
+
 def get_date_suggestion(val):
     """
     Involving just one field/value
@@ -221,25 +233,29 @@ def get_date_suggestion(val):
         return val
 
     # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
-    m = re.match('^[a-zA-Z]*\s?ukjent\s?[a-zA-Z]*$', val, flags=re.I)
+    m = re.match('^[a-zA-Z]*\s?(ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z]*$', val, flags=re.I)
     if m:
         return 'udatert'
 
-    # 'Udatert', ...
-    m = re.match('^[a-zA-Z]*\s?udatert\s?[a-zA-Z]*$', val, flags=re.I)
-    if m:
-        return 'udatert'
-
-    # Kun årstall
-    # - Fjern lenking
+    # Year only
+    # - Remove linking
     m = re.match('^\[{0,2}(\d{4})\]{0,2}$', val)
     if m:
         return '%s' % (m.group(1))
 
-    # 2004-2005 : whitespace of tankestrek/bindestrek
-    m = re.match('^(\d{4})\s?[-–]\s?(\d{4})$', val)
+    # Year range
+    # 2004-2005 : whitespace, tankestrek/bindestrek
+    # 2004-05 -> 2004-2005
+    m = re.match('^(\d{4})\s?[-–]\s?(\d{2,4})$', val)
     if m:
-        return '%s–%s' % (m.group(1), m.group(2))
+        startYear = m.group(1)
+        endYear = parseYear(m.group(2))
+        if endYear is not None:
+            diff = int(endYear[2:]) - int(startYear[2:])
+            if len(m.group(2)) == 4:
+                return '%s–%s' % (startYear, endYear)
+            elif diff > 0 and diff < 10:
+                return '%s–%s' % (startYear, endYear)
 
     # ISO-format:
     # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
@@ -269,17 +285,16 @@ def get_date_suggestion(val):
     # Norsk datoformat med to-sifret årstall (1.1.11)
     m = re.match('^(\d\d?\.\d\d?)\.(\d{2})$', val)
     if m:
-        y = int(m.group(2))
-        if y >= 20:
-            return '%s.19%s' % (m.group(1), m.group(2))
-        if y <= 14:
-            return '%s.20%s' % (m.group(1), m.group(2))
+        y = parseYear(m.group(2))
+        if y:
+            return '%s.%s' % (m.group(1), y)
 
     # Norsk datoformat (1. september 2014)
     # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
     # - Punctuation errors: (1.januar 2014, 1, januar 2014, 1 mars. 2010) -> 1. januar 2014
     # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
-    m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
+    # - 10(th|st|rd)?( of)? -> 10.
+    m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
     if m:
         mnd = get_month(m.group(2).lower())
         if mnd is not None:
@@ -431,6 +446,7 @@ class Template:
             if suggest2:
                 suggest = suggest2
 
+        print get_date_suggestion(p.value)
         if suggest is None:
             return False
 
@@ -458,12 +474,12 @@ class Page:
         modified = False
         for k, v in te.templates.iteritems():
             if k in ['Kilde www', 'Kilde bok', 'Kilde artikkel', 'Kilde avhandling', 'Cite web', 'Citeweb', 'Cite news', 'Cite journal', 'Cite book', 'Tidningsref', 'Webbref', 'Bokref']:
-                 for tpl in v:
-                     pass
-                     t = Template(tpl)
-                     self.checked += t.checked
-                     self.modified.extend(t.modified)
-                     self.unresolved.extend(t.unresolved)
+                for tpl in v:
+                    pass
+                    t = Template(tpl)
+                    self.checked += t.checked
+                    self.modified.extend(t.modified)
+                    self.unresolved.extend(t.unresolved)
 
         for u in self.unresolved:
             u['page'] = page.name
