@@ -212,15 +212,18 @@ def pre_clean(val):
     return val
 
 
-def parseYear(y):
+def parseYear(y, base='auto'):
     if len(y) == 4:
         return y
     elif len(y) == 2:
         y = int(y)
-        if y >= 20:
-            return '19%s' % (y)
-        if y <= 14:
-            return '20%s' % (y)
+        if base == 'auto':
+            if y >= 20:
+                return '19%s' % (y)
+            if y <= 14:
+                return '20%s' % (y)
+        else:
+            return '%s%s' % (base, y)
 
 
 def get_date_suggestion(val):
@@ -249,7 +252,7 @@ def get_date_suggestion(val):
     m = re.match('^(\d{4})\s?[-–]\s?(\d{2,4})$', val)
     if m:
         startYear = m.group(1)
-        endYear = parseYear(m.group(2))
+        endYear = parseYear(m.group(2), startYear[:2])
         if endYear is not None:
             diff = int(endYear[2:]) - int(startYear[2:])
             if len(m.group(2)) == 4:
@@ -446,7 +449,6 @@ class Template:
             if suggest2:
                 suggest = suggest2
 
-        print get_date_suggestion(p.value)
         if suggest is None:
             return False
 
