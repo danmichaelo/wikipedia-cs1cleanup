@@ -254,7 +254,10 @@ def get_date_suggestion(val):
     # - Endre til måned år
     m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
     if m:
-        return '%s %s' % (months[int(m.group(2)) - 1], m.group(1))
+        try:
+            return '%s %s' % (months[int(m.group(2)) - 1], m.group(1))
+        except IndexError:
+            pass
 
     # Norsk datoformat (1.1.2011)
     # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
