@@ -70,6 +70,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertTrue(is_valid_date('u.d.'))
         self.assertFalse(is_valid_date('n.d.'))
         self.assertFalse(is_valid_date('nd'))
+        self.assertTrue(is_valid_date('Mars 2015'))
 
     def test_pre_clean(self):
         self.assertEqual('2006-10-01', pre_clean('[[2006]]-[[1. oktober|10-01]]'))
@@ -93,7 +94,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('27. september – 4. oktober 2000', get_date_suggestion('27. september–4. oktober 2000'))
         self.assertEqual('21.–26. april 2002', get_date_suggestion('21.-26. april 2002'))  # bindestrek
         self.assertEqual('januar–februar 2002', get_date_suggestion('januar - februar 2002'))  # punctuation
-        self.assertEqual('mai 2012', get_date_suggestion('Mai 2012'))
+        self.assertEqual('Mai 2012', get_date_suggestion('Mai 2012'))
         self.assertEqual('mai 2012', get_date_suggestion('Mail 2012'))
         self.assertEqual('høsten 2012', get_date_suggestion('høst 2012'))
         self.assertEqual('våren 2012', get_date_suggestion('vår 2012'))
