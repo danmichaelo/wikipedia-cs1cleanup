@@ -3,14 +3,6 @@ from __future__ import unicode_literals
 
 import os
 import psutil
-
-
-def memory_usage_psutil():
-    # return the memory usage in MB
-    process = psutil.Process(os.getpid())
-    mem = process.get_memory_info()[0] / float(2 ** 20)
-    return mem
-
 import sys
 import re
 import sys
@@ -26,6 +18,14 @@ from mwtemplates import TemplateEditor
 from .correct import correct
 
 import logging
+
+
+def memory_usage_psutil():
+    # return the memory usage in MB
+    process = psutil.Process(os.getpid())
+    mem = process.get_memory_info()[0] / float(2 ** 20)
+    return mem
+
 logger = logging.getLogger('datofeil')
 
 months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']
