@@ -405,6 +405,13 @@ class Template:
                 p.value = suggest
                 continue
 
+            suggest2 = get_year_suggestion(p.value)
+            logger.info(suggest2)
+            if suggest2:
+                self.modified.append({'key': p.key, 'old': p.value, 'new': suggest2, 'complex': False})
+                p.value = suggest2
+                continue
+
             if not self.complex_replacements(p):
                 self.unresolved.append({'key': p.key, 'value': p.value})
 
