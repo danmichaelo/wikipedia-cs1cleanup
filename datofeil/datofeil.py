@@ -479,7 +479,13 @@ class Page:
         self.unresolved = []
 
         # te = page.text()
-        te = TemplateEditor(page.text())
+        txt = page.text()
+
+        # Due to <https://github.com/danmichaelo/mwtemplates/issues/3>
+        if re.search('<nowiki ?/>', txt, re.I) is not None:
+            return
+
+        te = TemplateEditor(txt)
 
         modified = False
         for k, v in te.templates.iteritems():
