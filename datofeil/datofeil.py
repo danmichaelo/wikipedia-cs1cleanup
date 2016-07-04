@@ -536,8 +536,7 @@ def main():
 
     config = json.load(open('config.json', 'r'))
 
-    site = Site('no.wikipedia.org')
-    site.login(config['username'], config['password'])
+    site = Site('no.wikipedia.org', **config)
     cat = site.Categories['Sider med kildemaler som inneholder datofeil']
 
     if args.page:
