@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import os
 import psutil
 import sys
+import string
 import re
 import sys
 import time
@@ -115,9 +116,9 @@ def is_valid_year(val):
 def get_year_suggestion(val):
 
     # Pre-clean
-    val = val.strip()
+    val = val.strip('()' + string.whitespace)
     val = re.sub('<!--.*?-->', '', val)  # strip comments
-    val = val.strip()
+    val = val.strip('()' + string.whitespace)
     if is_valid_year(val):
         return val
 
