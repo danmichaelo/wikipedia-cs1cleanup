@@ -517,12 +517,13 @@ class Page:
             except mwclient.errors.ProtectedPageError:
                 logger.error('ERROR: Page protected, could not save')
 
-            f = codecs.open('modified.txt', 'a', 'utf8')
-            for x in self.modified:
-                ti = urllib2.quote(page.name.replace(' ', '_').encode('utf8'))
-                difflink = '//no.wikipedia.org/w/index.php?title=%s&diff=%s&oldid=%s' % (ti, res['newrevid'], res['oldrevid'])
-                f.write('| [[%s]] ([%s diff]) || %s: %s → %s || %s\n|-\n' % (page.name, difflink, x['key'], x['old'], x['new'], 'kompleks' if x['complex'] else ''))
-            f.close()
+            if res.get('newrevid') is not None:
+                f = codecs.open('modified.txt', 'a', 'utf8')
+                for x in self.modified:
+                    ti = urllib2.quote(page.name.replace(' ', '_').encode('utf8'))
+                    difflink = '//no.wikipedia.org/w/index.php?title=%s&diff=%s&oldid=%s' % (ti, res['newrevid'], res['oldrevid'])
+                    f.write('| [[%s]] ([%s diff]) || %s: %s → %s || %s\n|-\n' % (page.name, difflink, x['key'], x['old'], x['new'], 'kompleks' if x['complex'] else ''))
+                f.close()
 
 
 def main():
