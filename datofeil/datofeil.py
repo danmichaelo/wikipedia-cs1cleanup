@@ -238,7 +238,7 @@ def get_date_suggestion(val):
         return val
 
     # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
-    m = re.match('^[a-zA-Z]*\s?(ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z]*$', val, flags=re.I)
+    m = re.match('^[a-zA-Z]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z]*$', val, flags=re.I)
     if m:
         return 'udatert'
 
