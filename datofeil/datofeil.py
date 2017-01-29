@@ -211,7 +211,6 @@ def pre_clean(val):
     val = re.sub(r'\[\[([^\]]+?)\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
     val = val.strip()
-    print val
     return val
 
 
