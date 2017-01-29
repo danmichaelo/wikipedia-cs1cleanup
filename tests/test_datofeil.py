@@ -73,14 +73,15 @@ class TestPreprocessor(unittest.TestCase):
         self.assertTrue(is_valid_date('Mars 2015'))
 
     def test_pre_clean(self):
-        self.assertEqual('2006-10-01', pre_clean('[[2006]]-[[1. oktober|10-01]]'))
+        # self.assertEqual('2006-10-01', pre_clean('[[2006]]-[[1. oktober|10-01]]'))
+        self.assertEqual('2006-1. oktober', pre_clean('[[2006]]-[[1. oktober|10-01]]'))
 
     def test_date_suggestions(self):
         self.assertEqual('09.04.2008', get_date_suggestion('[[09.04.2008]]'))
         self.assertEqual('09.04.2008', get_date_suggestion('[[09-04-2008]]'))
         self.assertEqual('2006-10-21', get_date_suggestion('[[2006-10-21]]'))
         self.assertEqual('2011-04-03', get_date_suggestion('2011-04-03.'))
-        self.assertEqual('2006-10-01', get_date_suggestion('[[2006]]-[[1. oktober|10-01]]'))
+        # self.assertEqual('2006-10-01', get_date_suggestion('[[2006]]-[[1. oktober|10-01]]'))
         self.assertEqual('24. oktober 2007', get_date_suggestion('[[24. oktober]] 2007'))
         self.assertEqual('1. januar 2014', get_date_suggestion('[[1. januar]] [[2014]]'))
         self.assertEqual('1. januar 2014', get_date_suggestion('[[1. januar]], [[2014]]'))
@@ -110,10 +111,16 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('oktober 1988', get_date_suggestion('1988-10'))
         self.assertEqual('udatert', get_date_suggestion('u.å.'))
         self.assertEqual('udatert', get_date_suggestion('n.d'))
+        self.assertEqual('udatert', get_date_suggestion('(ukjent)'))
         self.assertEqual(None, get_date_suggestion('n_d'))
         self.assertEqual(None, get_date_suggestion('n.d_'))
         self.assertEqual(None, get_date_suggestion('u_å_'))
         self.assertEqual('10. februar 2012', get_date_suggestion('10th of February, 2012'))
+        self.assertEqual('19. oktober 2012', get_date_suggestion('[[19. oktober|19. okt]][[2012|-12]]'))
+        self.assertEqual('30. september 1997', get_date_suggestion('[[September 30]],[[1997]]'))
+        self.assertEqual('30. juli 2008', get_date_suggestion('Wednesday 30 July 2008 11.30 BST'))
+        self.assertEqual('29. april 2012', get_date_suggestion('SUNDAY, APRIL 29, 2012'))
+        self.assertEqual('15. mars 2015', get_date_suggestion('Ajourført pr. 15. mars 2015'))
 
     def test_date_suggestions_en(self):
         self.assertEqual('mai 2012', get_date_suggestion('May 2012'))

@@ -208,9 +208,10 @@ def pre_clean(val):
     val = re.sub('&nbsp;', ' ', val)     # bruk vanlig mellomrom
     val = re.sub(r',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
     val = re.sub(r',? \d\d?:\d\d$', '', val)  # fjern klokkeslett
-    val = re.sub(r'\[\[[^\]]+?\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
+    val = re.sub(r'\[\[([^\]]+?)\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
     val = val.strip()
+    print val
     return val
 
 
@@ -238,7 +239,7 @@ def get_date_suggestion(val):
         return val
 
     # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
-    m = re.match('^[a-zA-Z]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z]*$', val, flags=re.I)
+    m = re.match('^[a-zA-Z()]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z()]*$', val, flags=re.I)
     if m:
         return 'udatert'
 
@@ -294,17 +295,6 @@ def get_date_suggestion(val):
         if y:
             return '%s.%s' % (m.group(1), y)
 
-    # Norsk datoformat (1. september 2014)
-    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
-    # - Punctuation errors: (1.januar 2014, 1, januar 2014, 1 mars. 2010) -> 1. januar 2014
-    # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
-    # - 10(th|st|rd)?( of)? -> 10.
-    m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
-    if m:
-        mnd = get_month(m.group(2).lower())
-        if mnd is not None:
-            return '%s. %s %s' % (m.group(1), mnd, m.group(3))
-
     # 1. januar 2014 - 1. februar 2015
     m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
     if m:
@@ -344,11 +334,22 @@ def get_date_suggestion(val):
             return '%s–%s %s' % (mnd1, mnd2, m.group(3))
 
     # January 1, 2014 -> 1. januar 2014
-    m = re.match('^([a-zA-Z]+) (\d\d?), (\d{4})$', val)
+    m = re.search('([a-zA-Z]+)\s?(\d\d?),\s?(\d{4})', val)
     if m:
         mnd = get_month(m.group(1).lower())
         if mnd is not None:
             return '%s. %s %s' % (m.group(2), mnd, m.group(3))
+
+    # Norsk datoformat (1. september 2014)
+    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+    # - Punctuation errors: (1.januar2014, 1, januar 2014, 1 mars. 2010, 1 March 2010) -> 1. januar 2014
+    # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
+    # - 10(th|st|rd)?( of)? -> 10.
+    m = re.search('(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})', val)
+    if m:
+        mnd = get_month(m.group(2).lower())
+        if mnd is not None:
+            return '%s. %s %s' % (m.group(1), mnd, m.group(3))
 
     return None
 
@@ -471,7 +472,7 @@ class Template:
 class Page:
 
     def format_entry(self, s):
-        return '%(key)s : %(old)s → %(new)s' % s
+        return "Endret '%(key)s' fra '%(old)s' til '%(new)s'" % s
 
     def __init__(self, page):
 
@@ -503,11 +504,11 @@ class Page:
 
         if len(self.modified) != 0:
             if len(self.modified) == 1:
-                summary = '[Datofiks] %s' % (self.format_entry(self.modified[0]))
+                summary = 'CS1-kompatible datoer: %s' % (self.format_entry(self.modified[0]))
             elif len(self.modified) == 2:
-                summary = '[Datofiks] %s, %s' % (self.format_entry(self.modified[0]), self.format_entry(self.modified[1]))
+                summary = 'CS1-kompatible datoer: %s, %s' % (self.format_entry(self.modified[0]), self.format_entry(self.modified[1]))
             else:
-                summary = '[Datofiks] Fikset %d datoer' % (len(self.modified))
+                summary = 'CS1-kompatible datoer: Fikset %d datoer' % (len(self.modified))
 
             logger.info('%s: %d modified : %s', page.name, len(self.modified), summary)
             time.sleep(3)
@@ -522,7 +523,7 @@ class Page:
                 for x in self.modified:
                     ti = urllib2.quote(page.name.replace(' ', '_').encode('utf8'))
                     difflink = '//no.wikipedia.org/w/index.php?title=%s&diff=%s&oldid=%s' % (ti, res['newrevid'], res['oldrevid'])
-                    f.write('| [[%s]] ([%s diff]) || %s: %s → %s || %s\n|-\n' % (page.name, difflink, x['key'], x['old'], x['new'], 'kompleks' if x['complex'] else ''))
+                    f.write('| [[%s]] ([%s diff]) || Endret %s fra %s til %s || %s\n|-\n' % (page.name, difflink, x['key'], x['old'], x['new'], 'kompleks' if x['complex'] else ''))
                 f.close()
 
 
