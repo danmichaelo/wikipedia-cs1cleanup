@@ -121,6 +121,12 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('30. juli 2008', get_date_suggestion('Wednesday 30 July 2008 11.30 BST'))
         self.assertEqual('29. april 2012', get_date_suggestion('SUNDAY, APRIL 29, 2012'))
         self.assertEqual('15. mars 2015', get_date_suggestion('Ajourført pr. 15. mars 2015'))
+        self.assertEqual('23. juli 1999', get_date_suggestion('23RD JULY 1999'))
+        self.assertEqual('2011-04-20', get_date_suggestion('20/4-2011'))
+        self.assertEqual('5. mai 2006', get_date_suggestion('2006, May 5'))
+
+        # TODO
+        # self.assertEqual(None, get_date_suggestion('udatert (ca. 10. juli 2012)'))
 
     def test_date_suggestions_en(self):
         self.assertEqual('mai 2012', get_date_suggestion('May 2012'))

@@ -294,6 +294,13 @@ def get_date_suggestion(val):
         if y:
             return '%s.%s' % (m.group(1), y)
 
+    # 1/10-11: Ikke 100 % entydig, men rimelig sannsynlig at d/m-yy på nowp
+    m = re.match('^(\d\d?)\/(\d\d?)-(\d{2,4})$', val)
+    if m:
+        y = parseYear(m.group(3))
+        if y:
+            return '{}-{:02d}-{:02d}'.format(y, int(m.group(2)), int(m.group(1)))
+
     # 1. januar 2014 - 1. februar 2015
     m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
     if m:
@@ -339,12 +346,19 @@ def get_date_suggestion(val):
         if mnd is not None:
             return '%s. %s %s' % (m.group(2), mnd, m.group(3))
 
+    # 2014, January 1 -> 1. januar 2014
+    m = re.search('(\d{4}),?\s?([a-zA-Z]+)\s?(\d\d?)', val)
+    if m:
+        mnd = get_month(m.group(2).lower())
+        if mnd is not None:
+            return '%s. %s %s' % (m.group(3), mnd, m.group(1))
+
     # Norsk datoformat (1. september 2014)
     # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
     # - Punctuation errors: (1.januar2014, 1, januar 2014, 1 mars. 2010, 1 March 2010) -> 1. januar 2014
     # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
     # - 10(th|st|rd)?( of)? -> 10.
-    m = re.search('(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})', val)
+    m = re.search('(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})', val, flags=re.I)
     if m:
         mnd = get_month(m.group(2).lower())
         if mnd is not None:
