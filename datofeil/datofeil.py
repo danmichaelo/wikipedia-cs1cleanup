@@ -62,7 +62,11 @@ seasonsdict = {
 
 
 def is_valid_month(name):
-    return name in months
+    try:
+        name = int(name)
+        return name >= 1 and name <= 12
+    except ValueError:
+        return name in months
 
 
 def is_valid_month_or_season(name):
@@ -113,6 +117,14 @@ def is_valid_year(val):
         return True
 
 
+def is_valid_day(val):
+    try:
+        val = int(val)
+        return val >= 1 and val <= 31
+    except ValueError:
+        return False
+
+
 def get_year_suggestion(val):
 
     # Pre-clean
@@ -127,8 +139,8 @@ def get_year_suggestion(val):
     if m:
         return m.group(1)
 
-    # Ca. 2011
-    m = re.match('^ca. (\d{4})$', val, flags=re.I)
+    # Ca. 2011 / c. 2011 / c2011
+    m = re.match('^ca?.? ?(\d{4})$', val, flags=re.I)
     if m:
         return 'ca. %s' % m.group(1)
 
@@ -148,11 +160,12 @@ def is_valid_date(val):
         return True
 
     # 2014-01-01
-    if re.match('^\d{4}-\d{2}-\d{2}$', val):
-        return True
+    m = re.match('^(\d{4})-(\d{2})-(\d{2})$', val)
+    if m:
+        return is_valid_year(m.group(1)) and is_valid_month(m.group(2)) and is_valid_day(m.group(3))
 
-    # 2014
-    if re.match('^\d{4}$', val):
+    # 2014, ca. 2014
+    if re.match('^(ca?\. )?\d{4}$', val):
         return True
 
     # 2014–2015
@@ -210,6 +223,7 @@ def pre_clean(val):
     val = re.sub(r',? \d\d?:\d\d$', '', val)  # fjern klokkeslett
     val = re.sub(r'\[\[([^\]]+?)\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
+    val = re.sub(r'\{\{([^|}]+)\|([^}]+)\}\}', r'\2', val)    # strip simple templates
     val = val.strip()
     return val
 
@@ -222,7 +236,7 @@ def parseYear(y, base='auto'):
         if base == 'auto':
             if y >= 20:
                 return '19%s' % (y)
-            if y <= 14:
+            if y < 20:
                 return '20%s' % (y)
         else:
             return '%s%s' % (base, y)
@@ -233,138 +247,149 @@ def get_date_suggestion(val):
     Involving just one field/value
     """
 
-    val = pre_clean(val)
-    if is_valid_date(val):
-        return val
+    def suggest_date(val):
 
-    # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
-    m = re.match('^[a-zA-Z()]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z()]*$', val, flags=re.I)
-    if m:
-        return 'udatert'
+        val = pre_clean(val)
+        if is_valid_date(val):
+            return val
 
-    # Year only
-    # - Remove linking
-    m = re.match('^\[{0,2}(\d{4})\]{0,2}$', val)
-    if m:
-        return '%s' % (m.group(1))
+        # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
+        m = re.match('^[a-zA-Z()]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z()]*$', val, flags=re.I)
+        if m:
+            return 'udatert'
 
-    # Year range
-    # 2004-2005 : whitespace, tankestrek/bindestrek
-    # 2004-05 -> 2004-2005
-    m = re.match('^(\d{4})\s?[-–]\s?(\d{2,4})$', val)
-    if m:
-        startYear = m.group(1)
-        endYear = parseYear(m.group(2), startYear[:2])
-        if endYear is not None:
-            diff = int(endYear[2:]) - int(startYear[2:])
-            if len(m.group(2)) == 4:
-                return '%s–%s' % (startYear, endYear)
-            elif diff > 0 and diff < 10:
-                return '%s–%s' % (startYear, endYear)
+        # Year only
+        # - Remove linking
+        m = re.match('^[\[.,]{0,2}(\d{4})[\].,]{0,2}$', val)
+        if m:
+            return '%s' % (m.group(1))
 
-    # ISO-format:
-    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
-    # - Korriger tankestrek -> bindestrek
-    m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
-    if m:
-        return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
+        # Year range
+        # 2004-2005 : whitespace, tankestrek/bindestrek
+        # 2004-05 -> 2004-2005
+        m = re.match('^(\d{4})\s?[-–]\s?(\d{2,4})$', val)
+        if m:
+            startYear = m.group(1)
+            endYear = parseYear(m.group(2), startYear[:2])
+            if endYear is not None:
+                diff = int(endYear[2:]) - int(startYear[2:])
+                if len(m.group(2)) == 4:
+                    return '%s–%s' % (startYear, endYear)
+                elif diff > 0 and diff < 10:
+                    return '%s–%s' % (startYear, endYear)
 
-    # YYYY-MM:
-    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
-    # - Korriger tankestrek -> bindestrek
-    # - Endre til måned år
-    m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
-    if m:
-        try:
-            return '%s %s' % (months[int(m.group(2)) - 1], m.group(1))
-        except IndexError:
-            pass
+        # ISO-format:
+        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+        # - Korriger tankestrek -> bindestrek
+        m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
+        if m:
+            return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
 
-    # Norsk datoformat (1.1.2011)
-    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
-    # - Rett bindestrek -> punktum
-    m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[.-](\d\d?)[.-](\d{4})[^a-zA-Z0-9]{0,2}$', val)
-    if m:
-        return '%s.%s.%s' % (m.group(1), m.group(2), m.group(3))
+        # YYYY-MM:
+        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+        # - Korriger tankestrek -> bindestrek
+        # - Endre til måned år
+        m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
+        if m:
+            try:
+                return '%s %s' % (months[int(m.group(2)) - 1], m.group(1))
+            except IndexError:
+                pass
 
-    # Norsk datoformat med to-sifret årstall (1.1.11)
-    m = re.match('^(\d\d?\.\d\d?)\.(\d{2})$', val)
-    if m:
-        y = parseYear(m.group(2))
-        if y:
-            return '%s.%s' % (m.group(1), y)
+        # Norsk datoformat (1.1.2011)
+        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+        # - Rett bindestrek -> punktum
+        m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[\s.-]+(\d\d?)[\s.-]+(\d{4})[^a-zA-Z0-9]{0,2}$', val)
+        if m:
+            return '%s.%s.%s' % (m.group(1), m.group(2), m.group(3))
 
-    # 1/10-11: Ikke 100 % entydig, men rimelig sannsynlig at d/m-yy på nowp
-    m = re.match('^(\d\d?)\/(\d\d?)-(\d{2,4})$', val)
-    if m:
-        y = parseYear(m.group(3))
-        if y:
-            return '{}-{:02d}-{:02d}'.format(y, int(m.group(2)), int(m.group(1)))
+        # Norsk datoformat med to-sifret årstall (1.1.11)
+        m = re.match('^(\d\d?\.\d\d?)\.(\d{2})$', val)
+        if m:
+            y = parseYear(m.group(2))
+            if y:
+                return '%s.%s' % (m.group(1), y)
 
-    # 1. januar 2014 - 1. februar 2015
-    m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
-    if m:
-        mnd1 = get_month(m.group(2).lower())
-        mnd2 = get_month(m.group(5).lower())
-        if mnd1 is not None and mnd2 is not None:
-            return '%s. %s %s – %s. %s %s' % (m.group(1), mnd1, m.group(3), m.group(4), mnd2, m.group(6))
+        # 1/10-11 o.l.: Ikke 100 % entydig, men rimelig sannsynlig at d/m-yy på nowp
+        m = re.match('^(\d\d?)\/(\d\d?)[- /]+(\d{2,4})$', val)
+        if m:
+            y = parseYear(m.group(3))
+            if y:
+                return '{}-{:02d}-{:02d}'.format(y, int(m.group(2)), int(m.group(1)))
 
-    # 1. januar - 1. februar 2015
-    m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+)\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
-    if m:
-        mnd1 = get_month(m.group(2).lower())
-        mnd2 = get_month(m.group(4).lower())
-        if mnd1 is not None and mnd2 is not None:
-            return '%s. %s – %s. %s %s' % (m.group(1), mnd1, m.group(3), mnd2, m.group(5))
+        # 1. januar 2014 - 1. februar 2015
+        m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
+        if m:
+            mnd1 = get_month(m.group(2).lower())
+            mnd2 = get_month(m.group(5).lower())
+            if mnd1 is not None and mnd2 is not None:
+                return '%s. %s %s – %s. %s %s' % (m.group(1), mnd1, m.group(3), m.group(4), mnd2, m.group(6))
 
-    # 1.-2. februar 2015 (punctuation errors)
-    m = re.match('^(\d\d?)[.,]?\s?[-–](\d\d?)[.,]?\s? ([a-zA-Z]+) (\d{4})$', val)
-    if m:
-        mnd = get_month(m.group(3).lower())
-        if mnd is not None:
-            return '%s.–%s. %s %s' % (m.group(1), m.group(2), mnd, m.group(4))
+        # 1. januar - 1. februar 2015
+        m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+)\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
+        if m:
+            mnd1 = get_month(m.group(2).lower())
+            mnd2 = get_month(m.group(4).lower())
+            if mnd1 is not None and mnd2 is not None:
+                return '%s. %s – %s. %s %s' % (m.group(1), mnd1, m.group(3), mnd2, m.group(5))
 
-    # month/season year (January 2014, januar, 2014, høst 2014, [[januar 2014]], January 2014, ...) -> januar 2014
-    m = re.match('^[^a-zA-Z0-9]{0,2}([a-zA-ZøåØÅ]+)[\., ]{1,2}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
-    if m:
-        mnd = get_month_or_season(m.group(1).lower())
-        if mnd is not None:
-            return '%s %s' % (mnd, m.group(2))
+        # 1.-2. februar 2015 (punctuation errors)
+        m = re.match('^(\d\d?)[.,]?\s?[-–](\d\d?)[.,]?\s? ([a-zA-Z]+) (\d{4})$', val)
+        if m:
+            mnd = get_month(m.group(3).lower())
+            if mnd is not None:
+                return '%s.–%s. %s %s' % (m.group(1), m.group(2), mnd, m.group(4))
 
-    # month/season–month/season year (februar–mars 2010, vår–sommer 2012, Atumn–winter 2010)
-    m = re.match('^([a-zA-ZøåØÅ]+)\s?[-–]\s?([a-zA-ZøåØÅ]+) (\d{4})$', val)
-    if m:
-        mnd1 = get_month_or_season(m.group(1).lower())
-        mnd2 = get_month_or_season(m.group(2).lower())
-        if mnd1 is not None and mnd2 is not None:
-            return '%s–%s %s' % (mnd1, mnd2, m.group(3))
+        # month/season year (January 2014, januar, 2014, høst 2014, [[januar 2014]], January 2014, ...) -> januar 2014
+        m = re.match('^[^a-zA-Z0-9]{0,2}([a-zA-ZøåØÅ]+)[\., ]{1,2}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
+        if m:
+            mnd = get_month_or_season(m.group(1).lower())
+            if mnd is not None:
+                return '%s %s' % (mnd, m.group(2))
 
-    # January 1, 2014 -> 1. januar 2014
-    m = re.search('([a-zA-Z]+)\s?(\d\d?),\s?(\d{4})', val)
-    if m:
-        mnd = get_month(m.group(1).lower())
-        if mnd is not None:
-            return '%s. %s %s' % (m.group(2), mnd, m.group(3))
+        # month/season–month/season year (februar–mars 2010, vår–sommer 2012, Atumn–winter 2010)
+        m = re.match('^([a-zA-ZøåØÅ]+)\s?[-–]\s?([a-zA-ZøåØÅ]+) (\d{4})$', val)
+        if m:
+            mnd1 = get_month_or_season(m.group(1).lower())
+            mnd2 = get_month_or_season(m.group(2).lower())
+            if mnd1 is not None and mnd2 is not None:
+                return '%s–%s %s' % (mnd1, mnd2, m.group(3))
 
-    # 2014, January 1 -> 1. januar 2014
-    m = re.search('(\d{4}),?\s?([a-zA-Z]+)\s?(\d\d?)', val)
-    if m:
-        mnd = get_month(m.group(2).lower())
-        if mnd is not None:
-            return '%s. %s %s' % (m.group(3), mnd, m.group(1))
+        # January 1, 2014 -> 1. januar 2014
+        m = re.search('([a-zA-Z]+)\s?(\d\d?),\s?(\d{4})', val)
+        if m:
+            mnd = get_month(m.group(1).lower())
+            if mnd is not None:
+                return '%s. %s %s' % (m.group(2), mnd, m.group(3))
 
-    # Norsk datoformat (1. september 2014)
-    # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
-    # - Punctuation errors: (1.januar2014, 1, januar 2014, 1 mars. 2010, 1 March 2010) -> 1. januar 2014
-    # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
-    # - 10(th|st|rd)?( of)? -> 10.
-    m = re.search('(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})', val, flags=re.I)
-    if m:
-        mnd = get_month(m.group(2).lower())
-        if mnd is not None:
-            return '%s. %s %s' % (m.group(1), mnd, m.group(3))
+        # 2014, January 1 -> 1. januar 2014
+        m = re.search('(\d{4}),?\s?([a-zA-Z]+)\s?(\d\d?)', val)
+        if m:
+            mnd = get_month(m.group(2).lower())
+            if mnd is not None:
+                return '%s. %s %s' % (m.group(3), mnd, m.group(1))
 
-    return None
+        # Norsk datoformat (1. september 2014)
+        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+        # - Punctuation errors: (1.januar2014, 1, januar 2014, 1 mars. 2010, 1 March 2010) -> 1. januar 2014
+        # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
+        # - 10(th|st|rd)?( of)? -> 10.
+        m = re.search('(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})', val, flags=re.I)
+        if m:
+            mnd = get_month(m.group(2).lower())
+            if mnd is not None:
+                return '%s. %s %s' % (m.group(1), mnd, m.group(3))
+
+        x = get_year_suggestion(val)
+        if x:
+            return x
+
+        return None
+
+    dt = suggest_date(val)
+    if dt is None or not is_valid_date(dt):
+        return None
+    return dt
 
 
 class Template:
