@@ -59,6 +59,7 @@ seasonsdict = {
     'fall': 'høsten',
     'winter': 'vinteren',
 }
+current_year = time.localtime().tm_year
 
 
 def is_valid_month(name):
@@ -111,10 +112,14 @@ def is_valid_year(val):
 
     # 2014
     if re.match('^\d{4}$', val):
-        return True
+        # Publication dates should normally not be in the future
+        if int(val) <= current_year + 2:
+            return True
 
-    if re.match('^ca?\. \d{4}$', val):
-        return True
+    m = re.match('^ca?\. (\d{4})$', val)
+    if m:
+        if int(m.group(1)) < current_year + 5:
+            return True
 
 
 def is_valid_day(val):
