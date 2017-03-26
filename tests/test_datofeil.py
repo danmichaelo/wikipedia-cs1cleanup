@@ -48,6 +48,7 @@ class TestPreprocessor(unittest.TestCase):
 
     def test_std_date(self):
         self.assertTrue(is_valid_date('1. januar 2014'))
+        self.assertFalse(is_valid_date('01. januar 2014'))
 
     def test_date_range(self):
         self.assertTrue(is_valid_date('1. januar 2014 – 1. februar 2015'))  # tankestrek
@@ -60,6 +61,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertFalse(is_valid_date('januar – februar 2014–februar'))
         self.assertTrue(is_valid_date('28. februar – 6. mars 2005'))
         self.assertTrue(is_valid_date('1942–1991'))
+        self.assertFalse(is_valid_date('24. des. 2009 00:03'))
 
     def test_misc(self):
         self.assertTrue(is_valid_date('våren 2015'))
@@ -136,6 +138,8 @@ class TestPreprocessor(unittest.TestCase):
         self.assertEqual('2012-01-02', get_date_suggestion('{{date|2012-01-02}}'))
         self.assertEqual('ca. 2014', get_date_suggestion('c2014'))
         self.assertEqual('ca. 2014', get_date_suggestion('ca 2014'))
+        self.assertEqual('24. desember 2009', get_date_suggestion('24. des. 2009 00:03'))
+        self.assertEqual('1. januar 2014', get_date_suggestion('01. januar 2014'))
 
         # TODO
         # self.assertEqual(None, get_date_suggestion('udatert (ca. 10. juli 2012)'))

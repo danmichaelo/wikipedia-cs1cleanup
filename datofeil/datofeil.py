@@ -122,10 +122,14 @@ def is_valid_year(val):
             return True
 
 
-def is_valid_day(val):
+def is_valid_day(val, allow_zero_prefix=True):
     try:
-        val = int(val)
-        return val >= 1 and val <= 31
+        ival = int(val)
+        if ival < 1 or ival > 31:
+            return False
+        if not allow_zero_prefix and str(ival) != val:
+            return False
+        return True
     except ValueError:
         return False
 
@@ -171,49 +175,50 @@ def is_valid_date(val):
 
     # 2014, ca. 2014
     if re.match('^(ca?\. )?\d{4}$', val):
-        return True
+        return is_valid_year(val)
 
     # 2014–2015
     if re.match('^\d{4}–\d{4}$', val):
         return True
 
     # 1.1.2001
-    if re.match('^\d\d?\.\d\d?\.\d{4}$', val):
-        return True
+    m = re.match('^(\d\d?)\.(\d\d?)\.(\d{4})$', val)
+    if m:
+        return is_valid_day(m.group(1)) and is_valid_month(m.group(2)) and is_valid_year(m.group(3))
 
     # 1. januar 2014
     m = re.match('^(\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_month(m.group(2)):
+    if m and is_valid_day(m.group(1), False) and is_valid_month(m.group(2)) and is_valid_year(m.group(3)):
         return True
 
     # 1.–2. januar 2014
     m = re.match('^(\d\d?)\.–(\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_month(m.group(3)):
+    if m and is_valid_day(m.group(2), False) and is_valid_day(m.group(2), False) and is_valid_month(m.group(3)) and is_valid_year(m.group(4)):
         return True
 
     # 1. januar – 2. februar 2014
     m = re.match('^(\d\d?)\. ([a-z]+) – (\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_month(m.group(2)) and is_valid_month(m.group(4)):
+    if m and is_valid_day(m.group(1), False) and is_valid_month(m.group(2)) and is_valid_day(m.group(3), False) and is_valid_month(m.group(4)) and is_valid_year(m.group(5)):
         return True
 
     # 1. januar 2014 – 1. februar 2015
     m = re.match('^(\d\d?)\. ([a-z]+) (\d{4}) – (\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_month(m.group(2)) and is_valid_month(m.group(5)):
+    if m and is_valid_day(m.group(1), False) and is_valid_month(m.group(2)) and is_valid_year(m.group(3)) and is_valid_day(m.group(4), False) and is_valid_month(m.group(5)) and is_valid_year(m.group(6)):
         return True
 
     # januar 2014
     m = re.match('^([A-Za-zøå]+) (\d{4})$', val)
-    if m and is_valid_month_or_season(m.group(1)):
+    if m and is_valid_month_or_season(m.group(1)) and is_valid_year(m.group(2)):
         return True
 
     # januar–februar 2014
     m = re.match('^([A-Za-zøå]+)–([a-z]+) (\d{4})$', val)
-    if m and is_valid_month_or_season(m.group(1)) and is_valid_month_or_season(m.group(2)):
+    if m and is_valid_month_or_season(m.group(1)) and is_valid_month_or_season(m.group(2)) and is_valid_year(m.group(3)):
         return True
 
     # januar 2014 – februar 2015
     m = re.match('^([A-Za-zøå]+) (\d{4}) – ([a-zøå]+) (\d{4})$', val)
-    if m and is_valid_month_or_season(m.group(1)) and is_valid_month_or_season(m.group(3)):
+    if m and is_valid_month_or_season(m.group(1)) and is_valid_year(m.group(2)) and is_valid_month_or_season(m.group(3)) and is_valid_year(m.group(4)):
         return True
 
     return False
@@ -325,25 +330,31 @@ def get_date_suggestion(val):
         # 1. januar 2014 - 1. februar 2015
         m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
         if m:
+            day1 = m.group(1).lstrip('0')
             mnd1 = get_month(m.group(2).lower())
+            day2 = m.group(4).lstrip('0')
             mnd2 = get_month(m.group(5).lower())
             if mnd1 is not None and mnd2 is not None:
-                return '%s. %s %s – %s. %s %s' % (m.group(1), mnd1, m.group(3), m.group(4), mnd2, m.group(6))
+                return '%s. %s %s – %s. %s %s' % (day1, mnd1, m.group(3), day2, mnd2, m.group(6))
 
         # 1. januar - 1. februar 2015
         m = re.match('^(\d\d?)[.,]?\s?([a-zA-Z]+)\s?[-–]\s?(\d\d?)[.,]?\s?([a-zA-Z]+) (\d{4})$', val)
         if m:
+            day1 = m.group(1).lstrip('0')
             mnd1 = get_month(m.group(2).lower())
+            day2 = m.group(3).lstrip('0')
             mnd2 = get_month(m.group(4).lower())
             if mnd1 is not None and mnd2 is not None:
-                return '%s. %s – %s. %s %s' % (m.group(1), mnd1, m.group(3), mnd2, m.group(5))
+                return '%s. %s – %s. %s %s' % (day1, mnd1, day2, mnd2, m.group(5))
 
         # 1.-2. februar 2015 (punctuation errors)
         m = re.match('^(\d\d?)[.,]?\s?[-–](\d\d?)[.,]?\s? ([a-zA-Z]+) (\d{4})$', val)
         if m:
+            day1 = m.group(1).lstrip('0')
+            day2 = m.group(2).lstrip('0')
             mnd = get_month(m.group(3).lower())
             if mnd is not None:
-                return '%s.–%s. %s %s' % (m.group(1), m.group(2), mnd, m.group(4))
+                return '%s.–%s. %s %s' % (day1, day2, mnd, m.group(4))
 
         # month/season year (January 2014, januar, 2014, høst 2014, [[januar 2014]], January 2014, ...) -> januar 2014
         m = re.match('^[^a-zA-Z0-9]{0,2}([a-zA-ZøåØÅ]+)[\., ]{1,2}(\d{4})[^a-zA-Z0-9]{0,2}$', val)
@@ -364,15 +375,17 @@ def get_date_suggestion(val):
         m = re.search('([a-zA-Z]+)\s?(\d\d?),\s?(\d{4})', val)
         if m:
             mnd = get_month(m.group(1).lower())
+            day1 = m.group(2).lstrip('0')
             if mnd is not None:
-                return '%s. %s %s' % (m.group(2), mnd, m.group(3))
+                return '%s. %s %s' % (day1, mnd, m.group(3))
 
         # 2014, January 1 -> 1. januar 2014
         m = re.search('(\d{4}),?\s?([a-zA-Z]+)\s?(\d\d?)', val)
         if m:
             mnd = get_month(m.group(2).lower())
+            day1 = m.group(3).lstrip('0')
             if mnd is not None:
-                return '%s. %s %s' % (m.group(3), mnd, m.group(1))
+                return '%s. %s %s' % (day1, mnd, m.group(1))
 
         # Norsk datoformat (1. september 2014)
         # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
@@ -381,9 +394,10 @@ def get_date_suggestion(val):
         # - 10(th|st|rd)?( of)? -> 10.
         m = re.search('(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})', val, flags=re.I)
         if m:
+            day1 = m.group(1).lstrip('0')
             mnd = get_month(m.group(2).lower())
             if mnd is not None:
-                return '%s. %s %s' % (m.group(1), mnd, m.group(3))
+                return '%s. %s %s' % (day1, mnd, m.group(3))
 
         x = get_year_suggestion(val)
         if x:
