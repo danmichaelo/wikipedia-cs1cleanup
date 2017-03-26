@@ -550,7 +550,6 @@ class Page:
         for k, v in te.templates.iteritems():
             if k in ['Kilde www', 'Kilde bok', 'Kilde artikkel', 'Kilde avhandling', 'Cite web', 'Citeweb', 'Cite news', 'Cite journal', 'Cite book', 'Tidningsref', 'Webbref', 'Bokref']:
                 for tpl in v:
-                    pass
                     t = Template(tpl)
                     self.checked += t.checked
                     self.modified.extend(t.modified)
