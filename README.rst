@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/danmichaelo/wikipedia-datofeil.svg?branch=master
+    :target: https://travis-ci.org/danmichaelo/wikipedia-datofeil
+
 Bot som korrigerer feilformaterte og/eller uoversatte datoer på Wikipedia på bokmål.
 
 En liste over endringer utført av boten finnes her:
