@@ -307,11 +307,11 @@ def pre_clean(val):
     val = re.sub('<!--.*?-->', '', val)  # strip comments
     val = re.sub('&ndash;', '–', val)    # bruk unicode
     val = re.sub('&nbsp;', ' ', val)     # bruk vanlig mellomrom
-    val = re.sub(r',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
-    val = re.sub(r',? \d\d?[:.]\d\d (?:[A-Z]{1,4})?$', '', val)  # fjern klokkeslett, evt. med tidssone
     val = re.sub(r'\[\[([^\]]+?)\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\{\{([^|}]+)\|([^}]+)\}\}', r'\2', val)    # strip simple templates
+    val = re.sub(r',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
+    val = re.sub(r',? \d\d?[:.]\d\d (?:[A-Z]{1,4})?$', '', val)  # fjern klokkeslett, evt. med tidssone
     val = re.sub('[()\[\]]', '', val)
     val = val.strip('.,' + string.whitespace)
 
