@@ -4,3 +4,4 @@ modified.txt
 datofeil.egg-info
 ENV
 *.pyc
+.python-version

@@ -11,7 +11,7 @@ import time
 import argparse
 import codecs
 import json
-import urllib2
+from six.moves.urllib.parse import quote
 
 from mwclient import Site
 from mwtemplates import TemplateEditor
@@ -47,6 +47,18 @@ monthsdict = {
     'dec': 'desember',
     'des': 'desember',
     'march': 'mars',
+    'января': 'januar',
+    'февраля': 'februar',
+    'марта': 'mars',
+    'апреля': 'april',
+    'мая': 'mai',
+    'июня': 'juni',
+    'июля': 'juli',
+    'августа': 'august',
+    'сентября': 'september',
+    'октября': 'oktober',
+    'ноября': 'november',
+    'декабря': 'desember',
 }
 seasonsdict = {
     'vår': 'våren',
@@ -62,22 +74,11 @@ seasonsdict = {
 current_year = time.localtime().tm_year
 
 
-def is_valid_month(name):
-    try:
-        name = int(name)
-        return name >= 1 and name <= 12
-    except ValueError:
-        return name in months
-
-
-def is_valid_month_or_season(name):
-    name = name[0].lower() + name[1:]  # ignore case on first character
-    return name in months or name in seasons
-
-
 def get_month(val):
     val = val.lower()
-    if is_valid_month(val):
+    if NumericMonthValidator(val).valid:
+        return val
+    if MonthValidator(val).valid:
         return val
     elif val in monthsdict:
         return monthsdict[val]
@@ -85,12 +86,13 @@ def get_month(val):
         suggest = correct(val)
         if suggest != val:
             return suggest
+    logger.debug('Could not match "%s" to month or season name', val)
     return None
 
 
 def get_month_or_season(val):
     val = val.lower()
-    if is_valid_month_or_season(val):
+    if MonthValidator(val, True).valid:
         return val
     elif val in monthsdict:
         return monthsdict[val]
@@ -103,138 +105,215 @@ def get_month_or_season(val):
     return None
 
 
-def is_valid_year(val):
-    val = val.strip()
+class Validator(object):
 
-    if re.match('^$', val):
-        # print 'Warning: empty year found'
-        return True  # empty
+    def __init__(self, value):
+        self.problem = None
+        self.value = value.strip()
+        self.valid = True
+        self.validate()
 
-    # 2014
-    if re.match('^\d{4}$', val):
-        # Publication dates should normally not be in the future
-        if int(val) <= current_year + 2:
-            return True
+    def validate(self):
+        pass
 
-    m = re.match('^ca?\. (\d{4})$', val)
-    if m:
-        if int(m.group(1)) < current_year + 5:
-            return True
-
-
-def is_valid_day(val, allow_zero_prefix=True):
-    try:
-        ival = int(val)
-        if ival < 1 or ival > 31:
-            return False
-        if not allow_zero_prefix and str(ival) != val:
-            return False
+    def is_valid(self):
         return True
-    except ValueError:
+
+    def is_invalid(self, problem=None):
+        self.valid = False
+        self.problem = problem
         return False
+
+
+class YearValidator(Validator):
+
+    def not_future_year(self, value):
+        if int(value) >= current_year + 2:
+            return self.is_invalid('Publiseringsår mer enn ett år inn i fremtiden')
+
+        return self.is_valid()
+
+    def validate(self):
+        if re.match('^$', self.value):
+            return self.is_valid()  # It's empty, that's ok
+
+        # 2014
+        m = re.match('^(\d{4})$', self.value)
+        if m:
+            # Publication dates should normally not be in the future
+            return self.not_future_year(m.group(1))
+
+        m = re.match('^ca?\. (\d{4})$', self.value)
+        if m:
+            return self.not_future_year(m.group(1))
+
+        return self.is_invalid()
+
+
+class MonthValidator(Validator):
+
+    def __init__(self, value, include_seasons=False):
+        self.include_seasons = include_seasons
+        super(MonthValidator, self).__init__(value)
+
+    def validate(self):
+        value = self.value[0].lower() + self.value[1:]  # ignore case on first character
+        if value not in months and (not self.include_seasons or value not in seasons):
+            return self.is_invalid('Ikke kjent navn på måned eller årstid')
+        return self.is_valid()
+
+
+class NumericMonthValidator(Validator):
+
+    def validate(self):
+        try:
+            value = int(self.value)
+            if value < 1 or value > 12:
+                return self.is_invalid('Månedsnummer utenfor rekkevidde 1-12')
+            return self.is_valid()
+
+        except ValueError:
+            return self.is_invalid('Ukjent månedsnummer')
+
+
+class DateValidator(Validator):
+
+    def check_year(self, value):
+        validator = YearValidator(value)
+        if not validator.valid:
+            return self.is_invalid(validator.problem)
+        return True
+
+    def check_numeric_month(self, value):
+        validator = NumericMonthValidator(value)
+        if not validator.valid:
+            return self.is_invalid(validator.problem)
+        return True
+
+    def check_month(self, value, include_seasons):
+        validator = MonthValidator(value, include_seasons)
+        if not validator.valid:
+            return self.is_invalid(validator.problem)
+        return True
+
+    def check_day(self, value, allow_zero_prefix=True):
+        try:
+            ival = int(value)
+            if ival < 1 or ival > 31:
+                return self.is_invalid('Dag utenfor rekkevidde 1-31')
+            if not allow_zero_prefix and str(ival) != value:
+                return self.is_invalid('Dag har 0-prefiks')
+            return self.is_valid()
+        except ValueError:
+            return self.is_invalid('Klarte ikke å tolke dagverdien')
+
+    def validate(self):
+
+        if re.match('^$', self.value):
+            # print 'Warning: empty date found'
+            return self.is_valid()  # empty
+
+        if re.match('^udatert$', self.value):
+            return self.is_valid()
+
+        if re.match('^u\.d\.$', self.value):
+            return self.is_valid()
+
+        # 2014-01-01
+        m = re.match('^(\d{4})-(\d{2})-(\d{2})$', self.value)
+        if m:
+            return self.check_year(m.group(1)) and self.check_numeric_month(m.group(2)) and self.check_day(m.group(3))
+
+        # 2014, ca. 2014
+        m = re.match('^(ca?\. )?(\d{4})$', self.value)
+        if m:
+            return self.check_year(m.group(2))
+
+        # 2014–2015
+        m = re.match('^(\d{4})–(\d{4})$', self.value)
+        if m:
+            return self.check_year(m.group(1)) and self.check_year(m.group(2))
+
+        # 1.1.2001
+        m = re.match('^(\d\d?)\.(\d\d?)\.(\d{4})$', self.value)
+        if m:
+            return self.check_day(m.group(1)) and self.check_numeric_month(m.group(2)) and self.check_year(m.group(3))
+
+        # 1. januar 2014
+        m = re.match('^(\d\d?)\. ([a-z]+) (\d{4})$', self.value)
+        if m:
+            q = self.check_day(m.group(1), False) and self.check_month(m.group(2), False) and self.check_year(m.group(3))
+            return q
+
+        # 1.–2. januar 2014
+        m = re.match('^(\d\d?)\.–(\d\d?)\. ([a-z]+) (\d{4})$', self.value)
+        if m:
+            return self.check_day(m.group(2), False) and self.check_day(m.group(2), False) and self.check_month(m.group(3), False) and self.check_year(m.group(4))
+
+        # 1. januar – 2. februar 2014
+        m = re.match('^(\d\d?)\. ([a-z]+) – (\d\d?)\. ([a-z]+) (\d{4})$', self.value)
+        if m:
+            return self.check_day(m.group(1), False) and self.check_month(m.group(2), False) and self.check_day(m.group(3), False) and self.check_month(m.group(4), False) and self.check_year(m.group(5))
+
+        # 1. januar 2014 – 1. februar 2015
+        m = re.match('^(\d\d?)\. ([a-z]+) (\d{4}) – (\d\d?)\. ([a-z]+) (\d{4})$', self.value)
+        if m:
+            return self.check_day(m.group(1), False) and self.check_month(m.group(2), False) and self.check_year(m.group(3)) and self.check_day(m.group(4), False) and self.check_month(m.group(5), False) and self.check_year(m.group(6))
+
+        # januar 2014
+        m = re.match('^([A-Za-zøå]+) (\d{4})$', self.value)
+        if m:
+            return self.check_month(m.group(1), True) and self.check_year(m.group(2))
+
+        # januar–februar 2014
+        m = re.match('^([A-Za-zøå]+)–([a-z]+) (\d{4})$', self.value)
+        if m:
+            return self.check_month(m.group(1), True) and self.check_month(m.group(2), True) and self.check_year(m.group(3))
+
+        # januar 2014 – februar 2015
+        m = re.match('^([A-Za-zøå]+) (\d{4}) – ([a-zøå]+) (\d{4})$', self.value)
+        if m:
+            return self.check_month(m.group(1), True) and self.check_year(m.group(2)) and self.check_month(m.group(3), True) and self.check_year(m.group(4))
+
+        return self.is_invalid()
+
+
+class VisitDateValidator(DateValidator):
+    # Should not be more than 10 years in the past
+    pass
 
 
 def get_year_suggestion(val):
 
-    # Pre-clean
-    val = val.strip('()' + string.whitespace)
-    val = re.sub('<!--.*?-->', '', val)  # strip comments
-    val = val.strip('()' + string.whitespace)
-    if is_valid_year(val):
-        return val
-
-    # [[2011]]
-    m = re.match('^\[\[(\d{4})\]\]$', val)
-    if m:
-        return m.group(1)
+    cleaned_val = pre_clean(val)
 
     # Ca. 2011 / c. 2011 / c2011
     m = re.match('^ca?.? ?(\d{4})$', val, flags=re.I)
     if m:
-        return 'ca. %s' % m.group(1)
+        cleaned_val = 'ca. %s' % m.group(1)
 
-
-def is_valid_date(val):
-
-    val = val.strip()
-
-    if re.match('^$', val):
-        # print 'Warning: empty date found'
-        return True  # empty
-
-    if re.match('^udatert$', val):
-        return True
-
-    if re.match('^u\.d\.$', val):
-        return True
-
-    # 2014-01-01
-    m = re.match('^(\d{4})-(\d{2})-(\d{2})$', val)
-    if m:
-        return is_valid_year(m.group(1)) and is_valid_month(m.group(2)) and is_valid_day(m.group(3))
-
-    # 2014, ca. 2014
-    if re.match('^(ca?\. )?\d{4}$', val):
-        return is_valid_year(val)
-
-    # 2014–2015
-    if re.match('^\d{4}–\d{4}$', val):
-        return True
-
-    # 1.1.2001
-    m = re.match('^(\d\d?)\.(\d\d?)\.(\d{4})$', val)
-    if m:
-        return is_valid_day(m.group(1)) and is_valid_month(m.group(2)) and is_valid_year(m.group(3))
-
-    # 1. januar 2014
-    m = re.match('^(\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_day(m.group(1), False) and is_valid_month(m.group(2)) and is_valid_year(m.group(3)):
-        return True
-
-    # 1.–2. januar 2014
-    m = re.match('^(\d\d?)\.–(\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_day(m.group(2), False) and is_valid_day(m.group(2), False) and is_valid_month(m.group(3)) and is_valid_year(m.group(4)):
-        return True
-
-    # 1. januar – 2. februar 2014
-    m = re.match('^(\d\d?)\. ([a-z]+) – (\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_day(m.group(1), False) and is_valid_month(m.group(2)) and is_valid_day(m.group(3), False) and is_valid_month(m.group(4)) and is_valid_year(m.group(5)):
-        return True
-
-    # 1. januar 2014 – 1. februar 2015
-    m = re.match('^(\d\d?)\. ([a-z]+) (\d{4}) – (\d\d?)\. ([a-z]+) (\d{4})$', val)
-    if m and is_valid_day(m.group(1), False) and is_valid_month(m.group(2)) and is_valid_year(m.group(3)) and is_valid_day(m.group(4), False) and is_valid_month(m.group(5)) and is_valid_year(m.group(6)):
-        return True
-
-    # januar 2014
-    m = re.match('^([A-Za-zøå]+) (\d{4})$', val)
-    if m and is_valid_month_or_season(m.group(1)) and is_valid_year(m.group(2)):
-        return True
-
-    # januar–februar 2014
-    m = re.match('^([A-Za-zøå]+)–([a-z]+) (\d{4})$', val)
-    if m and is_valid_month_or_season(m.group(1)) and is_valid_month_or_season(m.group(2)) and is_valid_year(m.group(3)):
-        return True
-
-    # januar 2014 – februar 2015
-    m = re.match('^([A-Za-zøå]+) (\d{4}) – ([a-zøå]+) (\d{4})$', val)
-    if m and is_valid_month_or_season(m.group(1)) and is_valid_year(m.group(2)) and is_valid_month_or_season(m.group(3)) and is_valid_year(m.group(4)):
-        return True
-
-    return False
+    # Pre-clean
+    if YearValidator(cleaned_val).valid:
+        return cleaned_val
 
 
 def pre_clean(val):
     # Pre-clean
+    orig_val = val
+    val = val.strip('.,' + string.whitespace)
     val = re.sub('<!--.*?-->', '', val)  # strip comments
     val = re.sub('&ndash;', '–', val)    # bruk unicode
     val = re.sub('&nbsp;', ' ', val)     # bruk vanlig mellomrom
     val = re.sub(r',? kl\.\s?\d\d?[:.]\d\d([:.]\d\d)?$', '', val)  # fjern klokkeslett
-    val = re.sub(r',? \d\d?:\d\d$', '', val)  # fjern klokkeslett
+    val = re.sub(r',? \d\d?[:.]\d\d (?:[A-Z]{1,4})?$', '', val)  # fjern klokkeslett, evt. med tidssone
     val = re.sub(r'\[\[([^\]]+?)\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\{\{([^|}]+)\|([^}]+)\}\}', r'\2', val)    # strip simple templates
-    val = val.strip()
+    val = re.sub('[()\[\]]', '', val)
+    val = val.strip('.,' + string.whitespace)
+
+    if val != orig_val:
+        logger.debug('Pre-cleaned "%s" as "%s"', orig_val, val)
     return val
 
 
@@ -259,18 +338,8 @@ def get_date_suggestion(val):
 
     def suggest_date(val):
 
-        val = pre_clean(val)
-        if is_valid_date(val):
-            return val
-
-        # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
-        m = re.match('^[a-zA-Z()]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z()]*$', val, flags=re.I)
-        if m:
-            return 'udatert'
-
         # Year only
-        # - Remove linking
-        m = re.match('^[\[.,]{0,2}(\d{4})[\].,]{0,2}$', val)
+        m = re.match('^(\d{4})$', val)
         if m:
             return '%s' % (m.group(1))
 
@@ -306,19 +375,18 @@ def get_date_suggestion(val):
             except IndexError:
                 pass
 
-        # Norsk datoformat (1.1.2011)
-        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
-        # - Rett bindestrek -> punktum
-        m = re.match('^[^a-zA-Z0-9]{0,2}(\d\d?)[\s.-]+(\d\d?)[\s.-]+(\d{4})[^a-zA-Z0-9]{0,2}$', val)
+        # Norsk datoformat med to-sifret årstall (1.1.11 eller 01.01.11)
+        m = re.match('^(\d\d?)\.(\d\d?)\.(\d{2})$', val)
         if m:
-            return '%s.%s.%s' % (m.group(1), m.group(2), m.group(3))
-
-        # Norsk datoformat med to-sifret årstall (1.1.11)
-        m = re.match('^(\d\d?\.\d\d?)\.(\d{2})$', val)
-        if m:
-            y = parseYear(m.group(2))
-            if y:
-                return '%s.%s' % (m.group(1), y)
+            year = parseYear(m.group(3))
+            if year:
+                if m.group(1).startswith('0') and len(m.group(2)) == 1:
+                    # 05.5.2015 -> 5.5.2015
+                    return '%s.%s.%s' % (m.group(1).lstrip('0'), m.group(2), year)
+                if m.group(2).startswith('0') and len(m.group(1)) == 1:
+                    # 5.05.2015 -> 5.5.2015
+                    return '%s.%s.%s' % (m.group(1), m.group(2).lstrip('0'), year)
+                return '%s.%s.%s' % (m.group(1), m.group(2), year)
 
         # 1/10-11 o.l.: Ikke 100 % entydig, men rimelig sannsynlig at d/m-yy på nowp
         m = re.match('^(\d\d?)\/(\d\d?)[- /]+(\d{2,4})$', val)
@@ -371,43 +439,90 @@ def get_date_suggestion(val):
             if mnd1 is not None and mnd2 is not None:
                 return '%s–%s %s' % (mnd1, mnd2, m.group(3))
 
+    def suggest_date_fuzzy(val):
+        suggestions = []
+
+        # 'ukjent', 'dato ukjent', 'ukjent dato', 'ukjent publiseringsdato', ...
+        for m in re.finditer('[a-zA-Z()]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z()]*', val, flags=re.I):
+            suggestions.append('udatert')
+
+        # Norsk datoformat (1.1.2011 eller 01.01.2011)
+        # - Use negative lookbehind and lookahead to ensure digits to not precede or follow
+        # - Rett bindestrek -> punktum
+        for m in re.finditer('(?<!\d)(\d\d?)[\s.-]+(\d\d?)[\s.-]+(\d{4})(?!\d)', val):
+            if m.group(1).startswith('0') and len(m.group(2)) == 1:
+                # 05.5.2015 -> 5.5.2015
+                suggestions.append('%s.%s.%s' % (m.group(1).lstrip('0'), m.group(2), m.group(3)))
+            if m.group(2).startswith('0') and len(m.group(1)) == 1:
+                # 5.05.2015 -> 5.5.2015
+                suggestions.append('%s.%s.%s' % (m.group(1), m.group(2).lstrip('0'), m.group(3)))
+            else:
+                suggestions.append('%s.%s.%s' % (m.group(1), m.group(2), m.group(3)))
+
         # January 1, 2014 -> 1. januar 2014
-        m = re.search('([a-zA-Z]+)\s?(\d\d?),\s?(\d{4})', val)
-        if m:
+        for m in re.finditer('([a-zA-Z]+)\s?(\d\d?),\s?(\d{4})', val):
             mnd = get_month(m.group(1).lower())
             day1 = m.group(2).lstrip('0')
             if mnd is not None:
-                return '%s. %s %s' % (day1, mnd, m.group(3))
+                suggestions.append('%s. %s %s' % (day1, mnd, m.group(3)))
 
         # 2014, January 1 -> 1. januar 2014
-        m = re.search('(\d{4}),?\s?([a-zA-Z]+)\s?(\d\d?)', val)
-        if m:
+        for m in re.finditer('(\d{4}),?\s?([a-zA-Z]+)\s?(\d\d?)', val):
             mnd = get_month(m.group(2).lower())
             day1 = m.group(3).lstrip('0')
             if mnd is not None:
-                return '%s. %s %s' % (day1, mnd, m.group(1))
+                suggestions.append('%s. %s %s' % (day1, mnd, m.group(1)))
 
         # Norsk datoformat (1. september 2014)
-        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+        # - Use negative lookbehind and lookahead to ensure digits to not precede or follow
         # - Punctuation errors: (1.januar2014, 1, januar 2014, 1 mars. 2010, 1 March 2010) -> 1. januar 2014
         # - Fikser månedsnavn med skrivefeil eller på engelsk eller svensk
         # - 10(th|st|rd)?( of)? -> 10.
-        m = re.search('(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})', val, flags=re.I)
-        if m:
+        # p_word = '[^ ]*?'
+        # p_word_delim = '[ :.,;]'
+        # p_before = '^' + ('(?:%s%s)?' % (p_word, p_word_delim))   # match max one words
+        # p_after = ('(?:%s%s)?' % (p_word_delim, p_word)) *2 + '$'  # match max two words
+        pattern = '(?<!\d)(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})(?!\d)'
+        for m in re.finditer(pattern, val, flags=re.I):
             day1 = m.group(1).lstrip('0')
-            mnd = get_month(m.group(2).lower())
+            mnd = get_month(m.group(2))
             if mnd is not None:
-                return '%s. %s %s' % (day1, mnd, m.group(3))
+                suggestions.append('%s. %s %s' % (day1, mnd, m.group(3)))
 
-        x = get_year_suggestion(val)
-        if x:
-            return x
+        return suggestions
 
+    cleaned_val = pre_clean(val)
+
+    # Check if pre-cleaned date is valid
+    if DateValidator(cleaned_val).valid:
+        if cleaned_val == val:
+            logger.debug('Date "%s" seems to be valid as-is', val)
+        else:
+            logger.info('Suggests to cleanup "%s" as "%s"', val, cleaned_val)
+
+        return cleaned_val
+
+    dt = suggest_date(cleaned_val)
+    if dt is None:
+        dts = suggest_date_fuzzy(cleaned_val)
+        if len(dts) == 0:
+            dt = get_year_suggestion(cleaned_val)
+            if dt is None:
+                logger.info('Found no date suggestion for "%s"', val)
+                return None
+        elif len(dts) != 1:
+            logger.info('Indeterminate: Found more than one (%d) date suggestions for "%s"', len(dts), val)
+            return None
+        else:
+            dt = dts[0]
+
+    # Check that suggested date is actually valid
+    dv = DateValidator(dt)
+    if not dv.valid:
+        logger.warning('Date "%s" produced invalid suggestion "%s": %s', val, dt, dv.problem)
         return None
 
-    dt = suggest_date(val)
-    if dt is None or not is_valid_date(dt):
-        return None
+    logger.info('Suggests to change "%s" to "%s"', val, dt)
     return dt
 
 
@@ -439,7 +554,9 @@ class Template:
 
             self.checked += 1
 
-            if is_valid_year(p.value):
+            validator = YearValidator(p.value)
+
+            if validator.valid:
                 continue
 
             suggest = get_year_suggestion(p.value)
@@ -449,13 +566,15 @@ class Template:
                 continue
 
             if not self.complex_replacements_year(p):
-                self.unresolved.append({'key': p.key, 'value': p.value})
+                self.unresolved.append({'key': p.key, 'value': p.value, 'problem': validator.problem})
 
         for p in self.dato:
 
             self.checked += 1
 
-            if is_valid_date(p.value):
+            validator = DateValidator(p.value)
+
+            if validator.valid:
                 continue
 
             suggest = get_date_suggestion(p.value)
@@ -465,14 +584,13 @@ class Template:
                 continue
 
             suggest2 = get_year_suggestion(p.value)
-            logger.info(suggest2)
             if suggest2:
                 self.modified.append({'key': p.key, 'old': p.value, 'new': suggest2, 'complex': False})
                 p.value = suggest2
                 continue
 
             if not self.complex_replacements(p):
-                self.unresolved.append({'key': p.key, 'value': p.value})
+                self.unresolved.append({'key': p.key, 'value': p.value, 'problem': validator.problem})
 
     def complex_replacements(self, p):
         """
@@ -509,7 +627,7 @@ class Template:
             return False
 
         suggest = None
-        if is_valid_date(p.value):
+        if DateValidator(p.value).valid:
             suggest = p.value
         else:
             suggest2 = get_date_suggestion(p.value)
@@ -532,6 +650,8 @@ class Page:
         return "Endret '%(key)s' fra '%(old)s' til '%(new)s'" % s
 
     def __init__(self, page):
+
+        logger.info('Checking page: %s', page.name)
 
         self.checked = 0
         self.modified = []
@@ -566,8 +686,8 @@ class Page:
             else:
                 summary = 'CS1-kompatible datoer: Fikset %d datoer' % (len(self.modified))
 
-            logger.info('%s: %d modified : %s', page.name, len(self.modified), summary)
-            time.sleep(3)
+            logger.info('Saving %d fixed date(s)', len(self.modified))
+            time.sleep(1)
 
             try:
                 res = page.save(te.wikitext(), summary=summary)
@@ -575,12 +695,16 @@ class Page:
                 logger.error('ERROR: Page protected, could not save')
 
             if res.get('newrevid') is not None:
-                f = codecs.open('modified.txt', 'a', 'utf8')
-                for x in self.modified:
-                    ti = urllib2.quote(page.name.replace(' ', '_').encode('utf8'))
-                    difflink = '//no.wikipedia.org/w/index.php?title=%s&diff=%s&oldid=%s' % (ti, res['newrevid'], res['oldrevid'])
-                    f.write('| [[%s]] ([%s diff]) || Endret %s fra %s til %s || %s\n|-\n' % (page.name, difflink, x['key'], x['old'], x['new'], 'kompleks' if x['complex'] else ''))
-                f.close()
+                with codecs.open('modified.txt', 'a', 'utf8') as f:
+                    for x in self.modified:
+                        ti = quote(page.name.replace(' ', '_').encode('utf8'))
+                        difflink = '//no.wikipedia.org/w/index.php?title=%s&diff=%s&oldid=%s' % (ti, res['newrevid'], res['oldrevid'])
+                        f.write('| [[%s]] ([%s diff]) || Endret %s fra %s til %s || %s\n|-\n' % (page.name, difflink, x['key'], x['old'], x['new'], 'kompleks' if x['complex'] else ''))
+
+                with codecs.open('modified-simple.txt', 'a', 'utf8') as f:
+                    for x in self.modified:
+                        ti = quote(page.name.replace(' ', '_').encode('utf8'))
+                        f.write('%s\t%s\t%s\n' % (page.name, x['old'], x['new']))
 
 
 def main():
@@ -606,7 +730,7 @@ def main():
         n = 0
         for page in cat.members():
             n += 1
-            logging.info('%02d %s - %.1f MB', n, page.name, memory_usage_psutil())
+            # logging.info('%02d %s - %.1f MB', n, page.name, memory_usage_psutil())
             # print "-----------[ %s ]-----------" % page.name
             p = Page(page)
             cnt['pagesChecked'] += 1
@@ -616,6 +740,7 @@ def main():
 
             if len(p.modified) == 0 and len(p.unresolved) == 0:
                 pagesWithNoKnownErrors.append(page.name)
+                # print(page.name)
 
             unresolved.extend(p.unresolved)
 
@@ -634,7 +759,7 @@ def main():
     unresolvedTxt += u'Unresolved errors:\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi\n|-\n'
 
     for p in unresolved:
-        unresolvedTxt += u'| [[%(page)s]] || %(key)s || <nowiki>%(value)s</nowiki>\n|-\n' % p
+        unresolvedTxt += u'| [[%(page)s]] || %(key)s || <nowiki>%(value)s</nowiki> || %(problem)s\n|-\n' % p
 
     page = site.pages[u'Bruker:DanmicholoBot/Datofiks/Uløst']
     page.save(unresolvedTxt, summary='Oppdaterer')
