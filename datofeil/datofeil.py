@@ -158,6 +158,8 @@ class MonthValidator(Validator):
         super(MonthValidator, self).__init__(value)
 
     def validate(self):
+        if len(self.value) < 2:
+            return self.is_invalid('Ikke kjent navn på måned eller årstid')
         value = self.value[0].lower() + self.value[1:]  # ignore case on first character
         if value not in months and (not self.include_seasons or value not in seasons):
             return self.is_invalid('Ikke kjent navn på måned eller årstid')
@@ -359,9 +361,9 @@ def get_date_suggestion(val):
                     return '%s–%s' % (startYear, endYear)
 
         # ISO-format:
-        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
+        # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn (\W matcher alt bortsett fra letters, 0-9 og underscore)
         # - Korriger tankestrek -> bindestrek
-        m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
+        m = re.match('^\W{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)\W{0,2}$', val)
         if m:
             return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
 
@@ -369,7 +371,7 @@ def get_date_suggestion(val):
         # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn
         # - Korriger tankestrek -> bindestrek
         # - Endre til måned år
-        m = re.match('^[^a-zA-Z0-9]{0,2}(\d{4})[-–](\d\d?)[^a-zA-Z0-9]{0,2}$', val)
+        m = re.match('^\W{0,2}(\d{4})[-–](\d\d?)\W{0,2}$', val)
         if m:
             try:
                 return '%s %s' % (months[int(m.group(2)) - 1], m.group(1))
@@ -461,14 +463,15 @@ def get_date_suggestion(val):
                 suggestions.append('%s.%s.%s' % (m.group(1), m.group(2), m.group(3)))
 
         # January 1, 2014 -> 1. januar 2014
-        for m in re.finditer('([a-zA-Z]+)\s?(\d\d?),\s?(\d{4})', val):
+        # - [^\W\d_] matches unicode letters (\w minus digits and underscore)
+        for m in re.finditer('([^\W\d_]+)\s?(\d\d?),\s?(\d{4})', val, re.UNICODE):
             mnd = get_month(m.group(1).lower())
             day1 = m.group(2).lstrip('0')
             if mnd is not None:
                 suggestions.append('%s. %s %s' % (day1, mnd, m.group(3)))
 
         # 2014, January 1 -> 1. januar 2014
-        for m in re.finditer('(\d{4}),?\s?([a-zA-Z]+)\s?(\d\d?)', val):
+        for m in re.finditer('(\d{4}),?\s?([^\W\d_]+)\s?(\d\d?)', val, re.UNICODE):
             mnd = get_month(m.group(2).lower())
             day1 = m.group(3).lstrip('0')
             if mnd is not None:
@@ -483,8 +486,8 @@ def get_date_suggestion(val):
         # p_word_delim = '[ :.,;]'
         # p_before = '^' + ('(?:%s%s)?' % (p_word, p_word_delim))   # match max one words
         # p_after = ('(?:%s%s)?' % (p_word_delim, p_word)) *2 + '$'  # match max two words
-        pattern = '(?<!\d)(\d\d?)(?:th|st|rd)?(?: of)?[^a-zA-Z0-9]{0,3}([a-zA-Z]+)[^a-zA-Z0-9]{0,3}(\d{4})(?!\d)'
-        for m in re.finditer(pattern, val, flags=re.I):
+        pattern = '(?<!\d)(\d\d?)(?:th|st|rd)?(?: of)?[\W]{0,3}([^\W\d_]+)[\W]{0,3}(\d{4})(?!\d)'
+        for m in re.finditer(pattern, val, flags=re.IGNORECASE | re.UNICODE):
             day1 = m.group(1).lstrip('0')
             mnd = get_month(m.group(2))
             if mnd is not None:
