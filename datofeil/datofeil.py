@@ -732,7 +732,7 @@ def main():
 
     else:
         n = 0
-        for page in cat.members():
+        for page in cat.members(namespace=0):
             n += 1
             # logging.info('%02d %s - %.1f MB', n, page.name, memory_usage_psutil())
             # print "-----------[ %s ]-----------" % page.name
@@ -763,7 +763,7 @@ def main():
     if cnt['problem'] is None:
         cnt['problem'] = ''
 
-    unresolvedTxt = u"Siste kjøring: %(now)s. Sjekket %(pagesChecked)d sider i [[:Kategori:Sider med kildemaler som inneholder datofeil]]. Fant %(datesChecked)d datofelt, hvorav " % cnt
+    unresolvedTxt = u"Siste kjøring: %(now)s. Sjekket %(pagesChecked)d hovednavneromssider i [[:Kategori:Sider med kildemaler som inneholder datofeil]]. Fant %(datesChecked)d datofelt, hvorav " % cnt
     unresolvedTxt += u"%(datesOk)d var korrekte, %(datesModified)d ble fikset og %(datesUnresolved)d kunne ikke fikses automatisk. Feltene som ikke kunne fikses automatisk er listet opp i tabellen under." % cnt
     unresolvedTxt += u'\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi !! Problem \n|-\n'
 
