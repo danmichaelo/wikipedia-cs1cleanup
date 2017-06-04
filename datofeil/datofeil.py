@@ -11,6 +11,7 @@ import time
 import argparse
 import codecs
 import json
+from datetime import datetime
 from six.moves.urllib.parse import quote
 
 from mwclient import Site
@@ -754,9 +755,14 @@ def main():
 
     cnt['datesOk'] = cnt['datesChecked'] - cnt['datesModified'] - cnt['datesUnresolved']
 
-    unresolvedTxt = u"Pages checked: %(pagesChecked)d, dates checked: %(datesChecked)d, of which<br>\n" % cnt
-    unresolvedTxt += "  OK: %(datesOk)d, modified: %(datesModified)d, unresolved errors: %(datesUnresolved)d\n\n" % cnt
-    unresolvedTxt += u'Unresolved errors:\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi\n|-\n'
+    cnt['now'] = datetime.now().strftime('%F %T')
+
+    if cnt['problem'] is None:
+        cnt['problem'] = ''
+
+    unresolvedTxt = u"Siste kjøring: %(now)s. Sjekket %(pagesChecked)d sider i [[:Kategori:Sider med kildemaler som inneholder datofeil]]. Fant %(datesChecked)d datofelt, hvorav " % cnt
+    unresolvedTxt += u"%(datesOk)d var korrekte, %(datesModified)d ble fikset og %(datesUnresolved)d kunne ikke fikses automatisk. Feltene som ikke kunne fikses automatisk er listet opp i tabellen under." % cnt
+    unresolvedTxt += u'\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi !! Problem \n|-\n'
 
     for p in unresolved:
         unresolvedTxt += u'| [[%(page)s]] || %(key)s || <nowiki>%(value)s</nowiki> || %(problem)s\n|-\n' % p
