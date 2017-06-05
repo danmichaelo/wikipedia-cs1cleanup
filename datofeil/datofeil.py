@@ -627,40 +627,41 @@ class Template:
 
     def complex_replacements(self, p):
         """
-        Replacements involving more than one field/value
+        Check if the combination of a {date} field and a {year} field is a valid date
 
         Returns: True if a replacement has been made, False otherwise
         """
 
-        if p.key in ['dato', 'date']:
-            # 14. mai
-            m = re.match('^(\d\d?)[.,]\s?([a-zA-Z]+)$', p.value)
-            if m:
-                mnd = get_month(m.group(2))
-                if mnd is not None and len(self.aar) == 1:
-                    m2 = re.match('^\[{0,2}(\d{4})\]{0,2}$', self.aar[0].value)
-                    if m2:
-                        suggest = '%s. %s %s' % (m.group(1), mnd, m2.group(1))
-                        self.modified.append({'key': p.key, 'old': p.value, 'new': suggest, 'complex': True})
-                        p.value = suggest
-                        del self.tpl.parameters[self.aar[0].key]
-                        return True
+        if p.key in ['dato', 'date'] and len(self.aar) == 1:
+            # If the combination "{date} {year}" is a valid date, replace
+            # the {date} field with "{date} {year}" and clear the {year} field.
+            combined_value = p.value + ' ' + self.aar[0].value
 
-        return False
+            suggest = get_date_suggestion(combined_value, False)
+            if suggest:
+                logger.info('%s:"%s" can be changed to "%s" and %s removed', p.key, p.value, suggest, self.aar[0].key)
+                self.modified.append({'key': p.key, 'old': p.value, 'new': suggest, 'complex': True})
+                p.value = suggest
+                del self.tpl.parameters[self.aar[0].key]
+                return True
+
+            return False
 
     def complex_replacements_year(self, p):
         """
-        Replacements involving more than one field/value
+        Check if {year} field value should be moved to a {date} field
 
         Returns: True if a replacement has been made, False otherwise
         """
 
-        q = [x for x in self.dato if x.key in ['dato', 'utgivelsesdato', 'date'] and x.value != '']
-        if len(q) != 0:
+        date_fields = [x for x in self.dato if x.key in ['dato', 'utgivelsesdato', 'date'] and x.value != '']
+        if len(date_fields) != 0:
+            # There is already a date field
             return False
 
         suggest = None
         if DateValidator(p.value).valid:
+            # The value is not a valid year field value, but is a valid date field value
             suggest = p.value
         else:
             suggest2 = get_date_suggestion(p.value)
@@ -670,10 +671,14 @@ class Template:
         if suggest is None:
             return False
 
+        # Add the value to either the {date} field if English template or {dato} otherwise
         param = 'date' if p.key == 'year' else 'dato'
         self.modified.append({'key': param, 'old': p.value, 'new': suggest, 'complex': True})
         self.tpl.parameters[param] = suggest
+
+        # Remove the original {year} field
         del self.tpl.parameters[p.key]
+
         return True
 
 

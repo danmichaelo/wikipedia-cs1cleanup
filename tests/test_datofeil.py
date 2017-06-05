@@ -11,8 +11,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 def getTemplateMock(parameters):
 
-    items = {}
-
     def makeParam(p):
         param = mock.Mock()
         param.key = p[0]
@@ -20,17 +18,17 @@ def getTemplateMock(parameters):
         return param
 
     def mock_getitem(self, key):
-        if key not in items:
+        if key not in params._items:
             return None
-        return items[key]
+        return params._items[key]
 
     def mock_delitem(self, key):
-        if key not in items:
+        if key not in params._items:
             return None
-        del items[key]
+        del params._items[key]
 
     def mock_setitem(self, key, val):
-        items[key] = makeParam((key, val))
+        params._items[key] = makeParam((key, val))
 
     tpl = mock.Mock()
     params = mock.MagicMock()
@@ -1096,10 +1094,20 @@ def test_month_suggestions():
     assert 'juni' == get_month('June')
 
 
-def test_complex1():
-    x = getTemplateMock({'utgivelsesår': '1951-53'})
-    assert x.tpl.parameters['utgivelsesår'] is None
-    assert x.tpl.parameters['dato'].value == '1951–1953'
+@pytest.mark.parametrize('test_input,expected', [
+    ({'utgivelsesår': '1951-53'}, {'utgivelsesår': None, 'dato': '1951–1953'}),
+    ({'utgivelsesår': '1941', 'dato': 'januar-februar'}, {'utgivelsesår': None, 'dato': 'januar–februar 1941'}),
+    ({'utgivelsesår': '1941', 'dato': 'test'}, {'utgivelsesår': '1941', 'dato': 'test'}),
+    ({'utgivelsesår': '1958', 'dato': 'juni'}, {'utgivelsesår': None, 'dato': 'juni 1958'}),
+])
+def test_complex1(test_input, expected):
+    template = getTemplateMock(test_input)
+    for key, value in expected.items():
+        if value is None:
+            assert template.tpl.parameters[key] is None, 'Field "%s" is "%s", expected None' % (key, template.tpl.parameters[key].value)
+        else:
+            assert template.tpl.parameters[key] is not None, 'Field "%s" is None, expected "%s"' % (key, value)
+            assert template.tpl.parameters[key].value == value, 'Field "%s" is "%s", expected "%s"' % (key, template.tpl.parameters[key].value, value)
 
 
 if __name__ == '__main__':
