@@ -13,6 +13,7 @@ import codecs
 import json
 from datetime import datetime
 from six.moves.urllib.parse import quote
+from six.moves import input
 
 from mwclient import Site
 from mwtemplates import TemplateEditor
@@ -29,6 +30,17 @@ def memory_usage_psutil():
     return mem
 
 logger = logging.getLogger('datofeil')
+
+checked_manually = {}
+
+if os.path.exists('checked_manually.txt'):
+    with codecs.open('checked_manually.txt', 'r', 'utf8') as f:
+        for line in f.read().split('\n'):
+            line = line.split('===')
+            if len(line) == 2:
+                checked_manually[line[0]] = line[1]
+
+logger.debug('Read %d entries from checked_manually.txt', len(checked_manually))
 
 months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']
 seasons = ['våren', 'sommeren', 'høsten', 'vinteren']
@@ -300,6 +312,16 @@ def get_year_suggestion(val):
         return cleaned_val
 
 
+def get_interactive_input(value):
+    if value in checked_manually:
+        return checked_manually[value]
+    new_value = input('Correct date: ')
+    checked_manually[value] = new_value
+    with codecs.open('checked_manually.txt', 'a', 'utf8') as f:
+        f.write(value + '===' + new_value + '\n')
+    return new_value
+
+
 def pre_clean(val):
     # Pre-clean
     orig_val = val
@@ -334,7 +356,7 @@ def parseYear(y, base='auto'):
             return '%s%s' % (base, y)
 
 
-def get_date_suggestion(val):
+def get_date_suggestion(val, interactive_mode=False):
     """
     Involving just one field/value
     """
@@ -515,9 +537,14 @@ def get_date_suggestion(val):
             dt = get_year_suggestion(cleaned_val)
             if dt is None:
                 logger.info('Found no date suggestion for "%s"', val)
-                return None
+                if interactive_mode:
+                    dt = get_interactive_input(val)
+                    if dt is None or dt == '':
+                        return None
+                else:
+                    return None
         elif len(dts) != 1:
-            logger.info('Indeterminate: Found more than one (%d) date suggestions for "%s"', len(dts), val)
+            logger.info('Indeterminate: Found more than one (%d) date suggestions for "%s": "%s"', len(dts), val, '", "'.join(dts))
             return None
         else:
             dt = dts[0]
@@ -534,7 +561,7 @@ def get_date_suggestion(val):
 
 class Template:
 
-    def __init__(self, tpl):
+    def __init__(self, tpl, interactive_mode):
 
         self.dato = []
         self.dag = []
@@ -583,7 +610,7 @@ class Template:
             if validator.valid:
                 continue
 
-            suggest = get_date_suggestion(p.value)
+            suggest = get_date_suggestion(p.value, interactive_mode)
             if suggest:
                 self.modified.append({'key': p.key, 'old': p.value, 'new': suggest, 'complex': False})
                 p.value = suggest
@@ -655,7 +682,7 @@ class Page:
     def format_entry(self, s):
         return "Endret '%(key)s' fra '%(old)s' til '%(new)s'" % s
 
-    def __init__(self, page):
+    def __init__(self, page, interactive_mode):
 
         logger.info('Checking page: %s', page.name)
 
@@ -676,7 +703,7 @@ class Page:
         for k, v in te.templates.iteritems():
             if k in ['Kilde www', 'Kilde bok', 'Kilde artikkel', 'Kilde avhandling', 'Kilde avis', 'Cite web', 'Citeweb', 'Cite news', 'Cite journal', 'Cite book', 'Tidningsref', 'Webbref', 'Bokref']:
                 for tpl in v:
-                    t = Template(tpl)
+                    t = Template(tpl, interactive_mode)
                     self.checked += t.checked
                     self.modified.extend(t.modified)
                     self.unresolved.extend(t.unresolved)
@@ -717,6 +744,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Datofeilfikser')
     parser.add_argument('--page', required=False, help='Name of a single page to check')
+    parser.add_argument('--interactive_mode', default=False, action='store_true', help='Interactive mode')
     args = parser.parse_args()
 
     cnt = {'pagesChecked': 0, 'datesChecked': 0, 'datesModified': 0, 'datesUnresolved': 0}
@@ -730,7 +758,7 @@ def main():
 
     if args.page:
         page = site.pages[args.page]
-        p = Page(page)
+        p = Page(page, args.interactive_mode)
 
     else:
         n = 0
@@ -738,7 +766,7 @@ def main():
             n += 1
             # logging.info('%02d %s - %.1f MB', n, page.name, memory_usage_psutil())
             # print "-----------[ %s ]-----------" % page.name
-            p = Page(page)
+            p = Page(page, args.interactive_mode)
             cnt['pagesChecked'] += 1
             cnt['datesChecked'] += p.checked
             cnt['datesModified'] += len(p.modified)

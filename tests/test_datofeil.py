@@ -40,7 +40,7 @@ def getTemplateMock(parameters):
     params.__setitem__ = mock_setitem
     params.__iter__.return_value = params._items.values()
     tpl.parameters = params
-    return Template(tpl)
+    return Template(tpl, False)
 
 
 @pytest.mark.parametrize('test_input,expected', [
