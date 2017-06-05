@@ -760,7 +760,7 @@ def main():
 
     cnt['now'] = datetime.now().strftime('%F %T')
 
-    if cnt['problem'] is None:
+    if cnt.get('problem') is None:
         cnt['problem'] = ''
 
     unresolvedTxt = u"Siste kjøring: %(now)s. Sjekket %(pagesChecked)d hovednavneromssider i [[:Kategori:Sider med kildemaler som inneholder datofeil]]. Fant %(datesChecked)d datofelt, hvorav " % cnt
