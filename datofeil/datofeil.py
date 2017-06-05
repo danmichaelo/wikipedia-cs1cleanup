@@ -760,14 +760,13 @@ def main():
 
     cnt['now'] = datetime.now().strftime('%F %T')
 
-    if cnt.get('problem') is None:
-        cnt['problem'] = ''
-
     unresolvedTxt = u"Siste kjøring: %(now)s. Sjekket %(pagesChecked)d hovednavneromssider i [[:Kategori:Sider med kildemaler som inneholder datofeil]]. Fant %(datesChecked)d datofelt, hvorav " % cnt
-    unresolvedTxt += u"%(datesOk)d var korrekte, %(datesModified)d ble fikset og %(datesUnresolved)d kunne ikke fikses automatisk. Feltene som ikke kunne fikses automatisk er listet opp i tabellen under." % cnt
+    unresolvedTxt += u"%(datesOk)d var i tråd med CS1, %(datesModified)d ble korrigert og %(datesUnresolved)d kunne ikke korrigeres automatisk. Feltene som ikke kunne korrigeres automatisk er listet opp i tabellen under." % cnt
     unresolvedTxt += u'\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi !! Problem \n|-\n'
 
     for p in unresolved:
+        if p.get('problem') is None:
+            p['problem'] = 'Ikke entydig/forståelig'
         unresolvedTxt += u'| [[%(page)s]] || %(key)s || <nowiki>%(value)s</nowiki> || %(problem)s\n|-\n' % p
 
     page = site.pages[u'Bruker:DanmicholoBot/Datofiks/Uløst']
