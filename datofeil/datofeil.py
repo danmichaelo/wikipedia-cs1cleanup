@@ -435,7 +435,8 @@ def get_date_suggestion(val):
                 return '%s %s' % (mnd, m.group(2))
 
         # month/season–month/season year (februar–mars 2010, vår–sommer 2012, Atumn–winter 2010)
-        m = re.match('^([a-zA-ZøåØÅ]+)\s?[-–]\s?([a-zA-ZøåØÅ]+) (\d{4})$', val)
+        #  - Fix wrong separator (hyphen or /) as in "juni/juli" -> "juni-juli"
+        m = re.match('^([a-zA-ZøåØÅ]+)\s?[-–/]\s?([a-zA-ZøåØÅ]+) (\d{4})$', val)
         if m:
             mnd1 = get_month_or_season(m.group(1).lower())
             mnd2 = get_month_or_season(m.group(2).lower())
@@ -464,7 +465,7 @@ def get_date_suggestion(val):
 
         # January 1, 2014 -> 1. januar 2014
         # - [^\W\d_] matches unicode letters (\w minus digits and underscore)
-        for m in re.finditer('([^\W\d_]+)\s?(\d\d?),\s?(\d{4})', val, re.UNICODE):
+        for m in re.finditer('([^\W\d_]{3,})\.?\s?(\d\d?),\s?(\d{4})', val, re.UNICODE):
             mnd = get_month(m.group(1).lower())
             day1 = m.group(2).lstrip('0')
             if mnd is not None:
@@ -486,12 +487,13 @@ def get_date_suggestion(val):
         # p_word_delim = '[ :.,;]'
         # p_before = '^' + ('(?:%s%s)?' % (p_word, p_word_delim))   # match max one words
         # p_after = ('(?:%s%s)?' % (p_word_delim, p_word)) *2 + '$'  # match max two words
-        pattern = '(?<!\d)(\d\d?)(?:th|st|rd)?(?: of)?[\W]{0,3}([^\W\d_]+)[\W]{0,3}(\d{4})(?!\d)'
+        pattern = '(?<!\d)(\d\d?)(?:th|st|rd|nd)?(?: of)?[\W]{0,3}([^\W\d_]{3,})(?: of)?[\W]{0,3}(\d{2}(?:\d{2})?)(?!\d)'
         for m in re.finditer(pattern, val, flags=re.IGNORECASE | re.UNICODE):
             day1 = m.group(1).lstrip('0')
             mnd = get_month(m.group(2))
-            if mnd is not None:
-                suggestions.append('%s. %s %s' % (day1, mnd, m.group(3)))
+            year = parseYear(m.group(3))
+            if mnd is not None and year is not None:
+                suggestions.append('%s. %s %s' % (day1, mnd, year))
 
         return suggestions
 
