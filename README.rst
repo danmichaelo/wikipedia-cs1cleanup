@@ -9,7 +9,7 @@ https://no.wikipedia.org/wiki/Bruker:DanmicholoBot/Datofikslogg
 
 Install::
 
-    virtualenv ENV
+    virtualenv --python=/usr/bin/python3 ENV
     . ENV/bin/activate
     pip install -e .
     cp config.dist.json config.json
