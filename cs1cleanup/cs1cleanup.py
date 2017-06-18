@@ -473,6 +473,10 @@ def get_date_suggestion(val, field_name, interactive_mode=False):
         for m in re.finditer('[a-zA-Z()]*\s?(undated|unknown|ukjent|udatert|u\.å\.?|n\.d\.?)\s?[a-zA-Z()]*', val, flags=re.I):
             suggestions.append('udatert')
 
+        # ISO-datoer
+        for m in re.finditer('(?<!\d)(\d{4})[-–](\d\d?)[-–](\d\d?)(?!\d)', val):
+            suggestions.append('%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3))))
+
         # Norsk datoformat (1.1.2011 eller 01.01.2011)
         # - Use negative lookbehind and lookahead to ensure digits to not precede or follow
         # - Rett bindestrek -> punktum
