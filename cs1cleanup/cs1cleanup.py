@@ -330,6 +330,7 @@ def pre_clean(val):
     val = re.sub('<!--.*?-->', '', val)  # strip comments
     val = re.sub('&ndash;', '–', val)    # bruk unicode
     val = re.sub('&nbsp;', ' ', val)     # bruk vanlig mellomrom
+    val = re.sub(r'\{\{Start date\|(\d{4})\|(\d{1,2})\|(\d{1,2})(?:\|df=\w{2,3})?\}\}', r'\1-\2-\3', val)    # strip wikilinks
     val = re.sub(r'\[\[([^\]]+?)\|([^\]]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\[\[([^|]+?)\]\]', r'\1', val)    # strip wikilinks
     val = re.sub(r'\{\{([^|}]+)\|([^}]+)\}\}', r'\2', val)    # strip simple templates
