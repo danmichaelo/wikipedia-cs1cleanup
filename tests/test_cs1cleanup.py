@@ -165,7 +165,7 @@ def test_pre_clean():
     # assert None == get_date_suggestion('udatert (ca. 10. juli 2012)')
 ])
 def test_get_date_suggestion(test_input, expected):
-    assert expected == get_date_suggestion(test_input)
+    assert expected == get_date_suggestion(test_input, '(test)')
 
 
 test_data = [
@@ -1083,7 +1083,7 @@ test_data = [
 
 @pytest.mark.parametrize('test_input,expected', test_data)
 def test_get_date_suggestion_large_set(test_input, expected):
-    assert expected == get_date_suggestion(test_input)
+    assert expected == get_date_suggestion(test_input, '(test)')
 
 
 def test_year_suggestions():

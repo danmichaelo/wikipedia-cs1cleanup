@@ -357,7 +357,7 @@ def parseYear(y, base='auto'):
             return '%s%s' % (base, y)
 
 
-def get_date_suggestion(val, interactive_mode=False):
+def get_date_suggestion(val, field_name, interactive_mode=False):
     """
     Involving just one field/value
     """
@@ -525,9 +525,9 @@ def get_date_suggestion(val, interactive_mode=False):
     # Check if pre-cleaned date is valid
     if DateValidator(cleaned_val).valid:
         if cleaned_val == val:
-            logger.debug('Date "%s" seems to be valid as-is', val)
+            logger.debug('%s:"%s" seems to be valid as-is', field_name, val)
         else:
-            logger.info('Suggests to cleanup "%s" as "%s"', val, cleaned_val)
+            logger.info('%s:"%s" can be changed to "%s"', field_name, val, cleaned_val)
 
         return cleaned_val
 
@@ -537,7 +537,7 @@ def get_date_suggestion(val, interactive_mode=False):
         if len(dts) == 0:
             dt = get_year_suggestion(cleaned_val)
             if dt is None:
-                logger.info('Found no date suggestion for "%s"', val)
+                logger.info('%s:"%s" was not understood', field_name, val)
                 if interactive_mode:
                     dt = get_interactive_input(val)
                     if dt is None or dt == '':
@@ -545,7 +545,7 @@ def get_date_suggestion(val, interactive_mode=False):
                 else:
                     return None
         elif len(dts) != 1:
-            logger.info('Indeterminate: Found more than one (%d) date suggestions for "%s": "%s"', len(dts), val, '", "'.join(dts))
+            logger.info('%s:"%s" is indeterminate, found more than one suggestion: "%s"', field_name, val, '", "'.join(dts))
             return None
         else:
             dt = dts[0]
@@ -553,10 +553,10 @@ def get_date_suggestion(val, interactive_mode=False):
     # Check that suggested date is actually valid
     dv = DateValidator(dt)
     if not dv.valid:
-        logger.warning('Date "%s" produced invalid suggestion "%s": %s', val, dt, dv.problem)
+        logger.warning('%s:"%s" produced an invalid suggestion "%s": %s', field_name, val, dt, dv.problem)
         return None
 
-    logger.info('Suggests to change "%s" to "%s"', val, dt)
+    logger.info('%s:"%s" can be changed to "%s"', field_name, val, dt)
     return dt
 
 
@@ -611,7 +611,7 @@ class Template:
             if validator.valid:
                 continue
 
-            suggest = get_date_suggestion(p.value, interactive_mode)
+            suggest = get_date_suggestion(p.value, p.key, interactive_mode)
             if suggest:
                 self.modified.append({'key': p.key, 'old': p.value, 'new': suggest, 'complex': False})
                 p.value = suggest
@@ -638,7 +638,7 @@ class Template:
             # the {date} field with "{date} {year}" and clear the {year} field.
             combined_value = p.value + ' ' + self.aar[0].value
 
-            suggest = get_date_suggestion(combined_value, False)
+            suggest = get_date_suggestion(combined_value, '(complex)', False)
             if suggest:
                 logger.info('%s:"%s" can be changed to "%s" and %s removed', p.key, p.value, suggest, self.aar[0].key)
                 self.modified.append({'key': p.key, 'old': p.value, 'new': suggest, 'complex': True})
@@ -665,7 +665,7 @@ class Template:
             # The value is not a valid year field value, but is a valid date field value
             suggest = p.value
         else:
-            suggest2 = get_date_suggestion(p.value)
+            suggest2 = get_date_suggestion(p.value, p.key)
             if suggest2:
                 suggest = suggest2
 
