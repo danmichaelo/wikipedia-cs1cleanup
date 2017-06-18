@@ -1,9 +1,11 @@
 .. image:: https://travis-ci.org/danmichaelo/wikipedia-datofeil.svg?branch=master
     :target: https://travis-ci.org/danmichaelo/wikipedia-datofeil
 
-Bot som korrigerer feilformaterte og/eller uoversatte datoer på Wikipedia på bokmål.
+Bot that tries to fix [https://no.wikipedia.org/wiki/Kategori:Sider_med_kildemaler_som_inneholder_datofeil wrongly formatted dates] in citation templates at Norwegian Bokmål Wikipedia. It uses
+[https://github.com/mwclient/mwclient/ mwclient] with
+[https://github.com/danmichaelo/mwtemplates] for parsing and editing the templates.
 
-En liste over endringer utført av boten finnes her:
+A list of changes done by the bot can be found here:
 
 https://no.wikipedia.org/wiki/Bruker:DanmicholoBot/Datofikslogg
 
