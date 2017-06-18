@@ -4,7 +4,7 @@ import logging
 import pytest
 import unittest
 import mock
-from datofeil import DateValidator, YearValidator, get_date_suggestion, get_year_suggestion, pre_clean, Template, get_month
+from cs1cleanup import DateValidator, YearValidator, get_date_suggestion, get_year_suggestion, pre_clean, Template, get_month
 
 logging.basicConfig(level=logging.DEBUG)
 

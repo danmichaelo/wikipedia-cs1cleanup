@@ -29,7 +29,7 @@ def memory_usage_psutil():
     mem = process.memory_info()[0] / float(2 ** 20)
     return mem
 
-logger = logging.getLogger('datofeil')
+logger = logging.getLogger('cs1cleanup')
 
 checked_manually = {}
 
@@ -747,7 +747,7 @@ class Page:
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Datofeilfikser')
+    parser = argparse.ArgumentParser(description='CS1 cleanup')
     parser.add_argument('--page', required=False, help='Name of a single page to check')
     parser.add_argument('--interactive_mode', default=False, action='store_true', help='Interactive mode')
     args = parser.parse_args()
