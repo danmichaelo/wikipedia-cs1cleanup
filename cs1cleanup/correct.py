@@ -2,7 +2,7 @@
 # Based on <http://norvig.com/spell-correct.html>
 from __future__ import unicode_literals
 
-wordlist = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember', 'våren', 'sommeren', 'høsten', 'vinteren']
+wordlist = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember', 'våren', 'sommeren', 'høsten', 'vinteren', 'julen']
 
 alphabet = 'abcdefghijklmnopqrstuvwxyzæøå'
 

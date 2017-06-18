@@ -43,7 +43,7 @@ if os.path.exists('checked_manually.txt'):
 logger.debug('Read %d entries from checked_manually.txt', len(checked_manually))
 
 months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']
-seasons = ['våren', 'sommeren', 'høsten', 'vinteren']
+seasons = ['våren', 'sommeren', 'høsten', 'vinteren', 'julen']
 monthsdict = {
     'jan': 'januar',
     'feb': 'februar',
@@ -83,6 +83,7 @@ seasonsdict = {
     'autumn': 'høsten',
     'fall': 'høsten',
     'winter': 'vinteren',
+    'christmas': 'julen',
 }
 current_year = time.localtime().tm_year
 
