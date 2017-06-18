@@ -1,9 +1,9 @@
 .. image:: https://travis-ci.org/danmichaelo/wikipedia-datofeil.svg?branch=master
     :target: https://travis-ci.org/danmichaelo/wikipedia-datofeil
 
-Bot that tries to fix `wrongly formatted dates <https://no.wikipedia.org/wiki/Kategori:Sider_med_kildemaler_som_inneholder_datofeil>` in citation templates at Norwegian Bokmål Wikipedia. It uses
-`mwclient <https://github.com/mwclient/mwclient/>` with
-`mwtemplates <https://github.com/danmichaelo/mwtemplates>` for parsing and editing the templates.
+Bot that tries to fix `wrongly formatted dates <https://no.wikipedia.org/wiki/Kategori:Sider_med_kildemaler_som_inneholder_datofeil>`_ in citation templates at Norwegian Bokmål Wikipedia. It uses
+`mwclient <https://github.com/mwclient/mwclient/>`_ with
+`mwtemplates <https://github.com/danmichaelo/mwtemplates>`_ for parsing and editing the templates.
 
 A list of changes done by the bot can be found here:
 
