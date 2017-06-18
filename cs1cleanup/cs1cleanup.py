@@ -386,7 +386,7 @@ def get_date_suggestion(val, field_name, interactive_mode=False):
         # ISO-format:
         # - Fjern opptil to omkringliggende ikke-alfanumeriske tegn (\W matcher alt bortsett fra letters, 0-9 og underscore)
         # - Korriger tankestrek -> bindestrek
-        m = re.match('^\W{0,2}(\d{4})[-–](\d\d?)[-–](\d\d?)\W{0,2}$', val)
+        m = re.match('^\W{0,2}(\d{4})[-–._](\d\d?)[-–._](\d\d?)\W{0,2}$', val)
         if m:
             return '%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3)))
 
@@ -474,7 +474,7 @@ def get_date_suggestion(val, field_name, interactive_mode=False):
             suggestions.append('udatert')
 
         # ISO-datoer
-        for m in re.finditer('(?<!\d)(\d{4})[-–](\d\d?)[-–](\d\d?)(?!\d)', val):
+        for m in re.finditer('(?<!\d)(\d{4})[-–._](\d\d?)[-–._](\d\d?)(?!\d)', val):
             suggestions.append('%s-%02d-%02d' % (m.group(1), int(m.group(2)), int(m.group(3))))
 
         # Norsk datoformat (1.1.2011 eller 01.01.2011)
