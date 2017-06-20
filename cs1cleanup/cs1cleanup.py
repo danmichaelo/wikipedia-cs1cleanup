@@ -805,7 +805,7 @@ def main():
     unresolvedTxt += u"%(datesOk)d var i tråd med CS1, %(datesModified)d ble korrigert og %(datesUnresolved)d kunne ikke korrigeres automatisk. Feltene som ikke kunne korrigeres automatisk er listet opp i tabellen under." % cnt
     unresolvedTxt += u'\n\n{|class="wikitable sortable"\n! Artikkel !! Felt !! Verdi !! Problem \n|-\n'
 
-    for p in unresolved:
+    for p in sorted(unresolved, key=lambda x: x['page'] + x['key'] + + x['value']):
         if p.get('problem') is None:
             p['problem'] = 'Ikke entydig/forståelig'
         unresolvedTxt += u'| [[%(page)s]] || %(key)s || <nowiki>%(value)s</nowiki> || %(problem)s\n|-\n' % p
