@@ -2,6 +2,6 @@
 
 echo "=== This is DanmicholoBot running on $(hostname) ==="
 
-. ENV/bin/activate
+. ~/PY3/bin/activate
 python run.py
 
