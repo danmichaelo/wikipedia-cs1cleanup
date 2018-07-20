@@ -123,7 +123,7 @@ class Validator(object):
 
     def __init__(self, value):
         self.problem = None
-        self.value = value.strip()
+        self.value = re.sub('<!--.*?-->', '', value).strip() # Ignore comments when checking for validity
         self.valid = True
         self.validate()
 
@@ -359,6 +359,17 @@ def parseYear(y, base='auto'):
 
 
 def get_date_suggestion(val, field_name, interactive_mode=False):
+    suggestion = get_date_suggestion_inner(val, field_name, interactive_mode)
+    if suggestion:
+        # Preserve simple comments
+        m = re.match(r'(.*)(<!--.*?-->)\s*', val)
+        if m is not None:
+            logger.debug('Preserving comment "%s"', m.group(2))
+            return '%s %s' % (suggestion, m.group(2))
+        return suggestion
+
+
+def get_date_suggestion_inner(val, field_name, interactive_mode=False):
     """
     Involving just one field/value
     """

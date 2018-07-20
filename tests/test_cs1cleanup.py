@@ -66,6 +66,7 @@ def getTemplateMock(parameters):
     ('nd', False),
     ('Mars 2015', True),
     ('mars 2015', True),
+    ('2018-06-16 <!-- sist oppdatert 17. juni -->', True),
 ])
 def test_date_validator(test_input, expected):
     assert DateValidator(test_input).valid is expected
@@ -157,10 +158,11 @@ def test_pre_clean():
     ('14. October 2010', '14. oktober 2010'),
     ('July 6, 2011', '6. juli 2011'),
     ('October-November 1999', 'oktober–november 1999'),
-    ('June 15, 2006 <!--DASHBot-->', '15. juni 2006'),
+    ('June 15, 2006 <!--DASHBot-->', '15. juni 2006 <!--DASHBot-->'),
     ('30 March 2013', '30. mars 2013'),
     ('12. maj 2012', '12. mai 2012'),
-    ('udatert (ca. 10. juli 2012)', None)
+    ('udatert (ca. 10. juli 2012)', None),
+    ('01 januar 2014<!-- Kommentar -->', '1. januar 2014 <!-- Kommentar -->'),
     # TODO: ('[[2006]]-[[1. oktober|10-01]]', '2006-10-01'),
     # assert None == get_date_suggestion('udatert (ca. 10. juli 2012)')
 ])
@@ -1051,8 +1053,8 @@ test_data = [
     ('July 15, 2011', '15. juli 2011'),
     ('December 15, 2010', '15. desember 2010'),
     ('July 12, 2008', '12. juli 2008'),
-    ('25 April 2010 <!--DASHBot-->', '25. april 2010'),
-    ('28 March 2010 <!--DASHBot-->', '28. mars 2010'),
+    ('25 April 2010 <!--DASHBot-->', '25. april 2010 <!--DASHBot-->'),
+    ('28 March 2010 <!--DASHBot-->', '28. mars 2010 <!--DASHBot-->'),
     ('5 January 2016', '5. januar 2016'),
     ('11 December 2014', '11. desember 2014'),
     ('10 September 2014', '10. september 2014'),
@@ -1062,11 +1064,11 @@ test_data = [
     ('15 December 2014', '15. desember 2014'),
     ('28 November 2016', '28. november 2016'),
     ('29 October 2012', '29. oktober 2012'),
-    ('17 April 2010 <!--DASHBot-->', '17. april 2010'),
-    ('25 March 2010 <!--DASHBot-->', '25. mars 2010'),
-    ('14 May 2010 <!--DASHBot-->', '14. mai 2010'),
-    ('1 March 2010 <!--DASHBot-->', '1. mars 2010'),
-    ('2 April 2010 <!--DASHBot-->', '2. april 2010'),
+    ('17 April 2010 <!--DASHBot-->', '17. april 2010 <!--DASHBot-->'),
+    ('25 March 2010 <!--DASHBot-->', '25. mars 2010 <!--DASHBot-->'),
+    ('14 May 2010 <!--DASHBot-->', '14. mai 2010 <!--DASHBot-->'),
+    ('1 March 2010 <!--DASHBot-->', '1. mars 2010 <!--DASHBot-->'),
+    ('2 April 2010 <!--DASHBot-->', '2. april 2010 <!--DASHBot-->'),
     ('3.06.17', '3.6.2017'),
     ('21 July 1980', '21. juli 1980'),
     ('12 April 2015', '12. april 2015'),
